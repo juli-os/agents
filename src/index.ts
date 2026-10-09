@@ -30,7 +30,7 @@ export {
   type SessionSnapshot, type Snapshot, type SnapshotDeps,
 } from './platform/agents/snapshot.ts';
 export {
-  parseHookStdin, parseSkillUsedStdin,
+  parseHookStdin, parseSkillUsedStdin, extractFinalMessage,
 } from './platform/agents/transcript.ts';
 export {
   parseSkill, loadSkills, expandPrompt, createSkillRegistry,

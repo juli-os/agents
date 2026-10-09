@@ -1,6 +1,6 @@
 {
   "name": "@juli-os/agents",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "juli-os L0 layer: the execution substrate — tmux-based agent session runtime with delivery confirmation, self-healing dispatch, PTY attach, hooks, snapshots, skills, and an ACP executor. Zero npm dependencies.",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,8 +15,14 @@
   "bin": {
     "juli-agents": "./dist/juli-agents.js"
   },
-  "files": ["dist", "README.md", "LICENSE"],
-  "engines": { "node": ">=22.5.0" },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/index.js && esbuild bin/juli-agents.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/juli-agents.js && chmod +x dist/juli-agents.js && python3 scripts/postbuild.py",
     "test": "node --test \"test/*.test.ts\"",
