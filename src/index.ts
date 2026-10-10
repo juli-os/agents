@@ -66,3 +66,9 @@ export type {
   SyncDispatcherPort, ToolSchema, ToolCallRequest,
   ChatMessage, ChatResult, ChatLlmPort,
 } from './contracts/ports.ts';
+// 0.1.3: complete the pane-question surface — parsePaneQuestion (+ PaneQuestion
+// types) was internal-only; the zombie watchdog in juli-service-ts consumes it
+// (2026-10-10 oss-integration fix: local shadow retirement).
+export {
+  parsePaneQuestion, type PaneQuestion, type PaneQuestionOption,
+} from './platform/shared/paneFingerprint.ts';
