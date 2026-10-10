@@ -2,7 +2,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  resolveTmuxBin, TMUX_BIN, inputBoxState,
+  resolveTmuxBin, TMUX_BIN, tmuxEnv, inputBoxState,
   tmuxAttachCommand, normalizeStopStatus, parseCallMode, extractPlanBlock,
 } from '../src/index.ts';
 
@@ -49,5 +49,29 @@ describe('纯函数冒烟', () => {
     const plan = extractPlanBlock(text);
     assert.ok(plan);
     assert.equal(plan.session, 'a');
+  });
+});
+
+describe('tmuxEnv（launchd 裸环境 locale 免疫，2026-10-10 事故）', () => {
+  it('无任何 locale → 注入 LC_ALL=C.UTF-8', () => {
+    const saved = { ...process.env };
+    delete process.env.LANG; delete process.env.LC_ALL; delete process.env.LC_CTYPE;
+    try {
+      assert.equal(tmuxEnv()['LC_ALL'], 'C.UTF-8');
+    } finally { Object.assign(process.env, saved); }
+  });
+  it('已声明 UTF-8 locale → 原样透传（不覆盖显式配置）', () => {
+    const saved = { ...process.env };
+    process.env['LANG'] = 'en_US.UTF-8'; delete process.env.LC_ALL; delete process.env.LC_CTYPE;
+    try {
+      assert.equal(tmuxEnv(), process.env);
+    } finally { Object.assign(process.env, saved); }
+  });
+  it('非 UTF-8 locale（ISO-8859-1）→ 也注入', () => {
+    const saved = { ...process.env };
+    process.env['LANG'] = 'en_US.ISO-8859-1'; delete process.env.LC_ALL; delete process.env.LC_CTYPE;
+    try {
+      assert.equal(tmuxEnv()['LC_ALL'], 'C.UTF-8');
+    } finally { Object.assign(process.env, saved); }
   });
 });

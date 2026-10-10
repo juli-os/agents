@@ -1,6 +1,6 @@
 {
   "name": "@juli-os/agents",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "juli-os L0 layer: the execution substrate — tmux-based agent session runtime with delivery confirmation, self-healing dispatch, PTY attach, hooks, snapshots, skills, and an ACP executor. Zero npm dependencies.",
   "type": "module",
   "main": "./dist/index.js",

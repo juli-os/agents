@@ -3,7 +3,7 @@
 // agents may depend on platform/shared and its own contracts/ports (type-only);
 // consumers must never bypass this facade.
 export {
-  resolveTmuxBin, TMUX_BIN, promptFingerprints, inputBoxState, createTmuxClient,
+  resolveTmuxBin, TMUX_BIN, tmuxEnv, promptFingerprints, inputBoxState, createTmuxClient,
   type TmuxSessionInfo, type SubmitStats, type TmuxClient,
 } from './platform/agents/tmux.ts';
 export {

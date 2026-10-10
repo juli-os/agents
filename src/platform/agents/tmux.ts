@@ -39,9 +39,23 @@ export const resolveTmuxBin = (
 /** 进程级解析一次：启动时定死，运行中不漂移（测试直调 resolveTmuxBin 注入）。 */
 export const TMUX_BIN = resolveTmuxBin();
 
+/** tmux 子进程环境：强制声明一个 UTF-8 locale（2026-10-10 launchd 裸环境事故）。
+ * tmux 在无任何 LANG/LC_* 的环境里进非 UTF-8 模式，`-F` 格式串里的字面 tab
+ * 会被渲染成下划线——listSessionsDetailed 的 tab 分隔整体失效，会话名变成
+ * "name_0_cwd_cmd" 复合串（graph/DAG 节点翻倍、终端按错误名 attach 打不开）。
+ * 已声明的 locale 不覆盖（尊重显式配置）；tmux 只认字符串含 "UTF-8"，
+ * C.UTF-8 在 macOS/Linux 都可用。 */
+export const tmuxEnv = (): NodeJS.ProcessEnv => {
+  const hasLocale = (process.env['LANG'] ?? '') + (process.env['LC_ALL'] ?? '')
+    + (process.env['LC_CTYPE'] ?? '');
+  return hasLocale.includes('UTF-8') || hasLocale.includes('utf8')
+    ? process.env
+    : { ...process.env, LC_ALL: 'C.UTF-8' };
+};
+
 const run = (cmd: string, args: readonly string[], timeoutMs = 10_000): Promise<Result<string, Error>> =>
   toResult(new Promise<string>((resolve, reject) => {
-    execFile(cmd, [...args], { timeout: timeoutMs, encoding: 'utf8' }, (e, stdout) => {
+    execFile(cmd, [...args], { timeout: timeoutMs, encoding: 'utf8', env: tmuxEnv() }, (e, stdout) => {
       if (e) {
         reject(new Error(`${cmd} ${args.join(' ')}: ${e.message.slice(0, 300)}`));
       } else {
