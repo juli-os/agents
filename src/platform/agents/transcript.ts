@@ -1,13 +1,17 @@
-// CC transcript 结构化输出（PORTING#3 的 ReadStructuredOutput 等价物）。
-// Stop hook 的 stdin 携带 transcript_path——最终答复从 transcript 的最后一条
-// assistant 消息提取，屏幕抓取（capture-pane）降级为僵尸检测专用回退。
+// Structured output from the CC transcript (equivalent of ReadStructuredOutput
+// in PORTING#3). The Stop hook's stdin carries transcript_path — the final
+// reply is extracted from the transcript's last assistant message; screen
+// capture (capture-pane) is demoted to a fallback used only for zombie
+// detection.
 
 import { openSync, readSync, fstatSync, closeSync } from 'node:fs';
 
-/** 尾部读取窗口：最后一条 assistant 消息【通常】在文件尾部附近；整文件
- * 读取既慢也无谓（transcript 可达数 MB）。窗口只是快路径——重工具轮次
- * （如 PPT 生成）尾部可能全是 tool 记录，此时走 extractFinalMessage 的
- * 二段式全文件兜底，因此窗口取 1MB 平衡快路径命中与单次读取开销。 */
+/** Tail-read window: the last assistant message is usually near the end of
+ * the file; reading the whole file is both slow and pointless (transcripts
+ * can reach several MB). The window is just a fast path — after heavy tool
+ * turns (e.g. PPT generation) the tail may be nothing but tool records, in
+ * which case extractFinalMessage falls back to its two-stage whole-file scan;
+ * hence a 1MB window balances fast-path hit rate against single-read cost. */
 const TAIL_BYTES = 1024 * 1024;
 
 interface HookPayload {
@@ -16,8 +20,9 @@ interface HookPayload {
   readonly stop_hook_active?: boolean;
 }
 
-/** 解析 hook stdin JSON；空/畸形输入返回 null（hook 兼容面：手动调用、
- * 旧版 CC 不带 payload，绝不能因此阻塞 agent）。 */
+/** Parse hook stdin JSON; empty/malformed input returns null (hook
+ * compatibility surface: manual invocation or older CC carries no payload —
+ * this must never block the agent). */
 export const parseHookStdin = (raw: string): HookPayload | null => {
   const s = raw.trim();
   if (s === '') return null;
@@ -29,13 +34,17 @@ export const parseHookStdin = (raw: string): HookPayload | null => {
   }
 };
 
-/** skill-used 动词的 stdin 契约（PostToolUse，matcher ^(Skill$|skill__)）：
- * 格式 A（Claude Code 实测 2026-10-04）：tool_name="Skill"（工具名），skill 名
- * 在 tool_input.skill 参数——5895efd 假设的 skill__ 前缀是 agentskills.io 通用
- * 规范格式而非 CC 实现，matcher ^skill__ 永不匹配导致频次恒 0（wf_d35bf3a1e198）。
- * 格式 B（agentskills.io 规范，跨 agent 兼容保留）：tool_name=skill__<name>。
- * 非法负载（无 skill 名/matcher 漏配/坏 stdin/非字符串）一律 null = 静默丢弃，
- * hook 永不阻塞 agent。返回值即上报负载。 */
+/** stdin contract for the skill-used verb (PostToolUse, matcher ^(Skill$|skill__)):
+ * Format A (Claude Code as observed 2026-10-04): tool_name="Skill" (the tool
+ * name), the skill name sits in the tool_input.skill parameter — the skill__
+ * prefix 5895efd assumed is the agentskills.io generic spec format, not the
+ * CC implementation, so a ^skill__ matcher never matched and counts stayed
+ * at 0 (wf_d35bf3a1e198).
+ * Format B (agentskills.io spec, kept for cross-agent compatibility):
+ * tool_name=skill__<name>.
+ * Malformed payloads (missing skill name / misconfigured matcher / bad
+ * stdin / non-string) all return null = silently dropped; the hook never
+ * blocks the agent. The return value is the report payload. */
 export const parseSkillUsedStdin = (raw: string): { skill: string; tool_name: string } | null => {
   const payload = parseHookStdin(raw) as { tool_name?: string; tool_input?: { skill?: string } } | null;
   const tool = typeof payload?.tool_name === 'string' ? payload.tool_name : '';
@@ -60,8 +69,9 @@ const readTail = (path: string, maxBytes: number): string => {
   }
 };
 
-/** 在 JSONL 文本中反查最后一条带非空 text 的 assistant 记录（尾窗与全文件
- * 两段共用）。找不到返回 null。 */
+/** Scan JSONL text backwards for the last assistant record with non-empty
+ * text (shared by both the tail-window and whole-file stages). Returns null
+ * when not found. */
 const scanForFinalMessage = (text: string): string | null => {
   const lines = text.split('\n');
   for (let i = lines.length - 1; i >= 0; i--) {
@@ -71,7 +81,7 @@ const scanForFinalMessage = (text: string): string | null => {
     try {
       obj = JSON.parse(line);
     } catch {
-      continue; // 窗口截断的首行/半行
+      continue; // window-truncated first/half line
     }
     if (obj === null || typeof obj !== 'object') continue;
     const rec = obj as { type?: unknown; message?: unknown };
@@ -94,24 +104,27 @@ const scanForFinalMessage = (text: string): string | null => {
   return null;
 };
 
-/** 从 transcript JSONL 尾部提取最后一条 assistant 文本消息。
- * CC transcript 行形如 {"type":"assistant","message":{role,content:[{type:"text",text}]}}；
- * 只有非空 text 块才算答复（tool_use/Thinking 不是）。找不到返回 null。
+/** Extract the last assistant text message from the tail of a transcript
+ * JSONL.
+ * CC transcript lines look like {"type":"assistant","message":{role,content:[{type:"text",text}]}}; only non-empty text blocks count as the reply (tool_use/Thinking do not). Returns null when not found.
  *
- * 二段式扫描：① 尾窗（TAIL_BYTES）快路径——最后一条答复通常就在尾部；
- * ② 兜底——重工具轮次（真实事故：PPT 生成 transcript 4.5MB）尾窗可能
- * 整段被 tool 记录占据而扫不到文本，此时按整个文件再反查一次。全量读入
- * 内存对数 MB 级 transcript 可接受，IO 失败同样返回 null（hook 兼容面：
- * 绝不因提取失败阻塞 agent）。 */
+ * Two-stage scan: ① tail window (TAIL_BYTES) fast path — the last reply is
+ * usually right at the tail; ② fallback — after heavy tool turns (real
+ * incident: a 4.5MB PPT-generation transcript) the tail window can be
+ * entirely occupied by tool records with no text found, so the whole file is
+ * scanned backwards once more. Reading the whole file into memory is
+ * acceptable for transcripts of a few MB; IO failure likewise returns null
+ * (hook compatibility surface: never block the agent because extraction
+ * failed). */
 export const extractFinalMessage = (transcriptPath: string): string | null => {
   try {
     const found = scanForFinalMessage(readTail(transcriptPath, TAIL_BYTES));
     if (found !== null) return found;
   } catch {
-    return null; // 文件不可读：不做第二段
+    return null; // file unreadable: skip stage two
   }
   try {
-    // 二段式兜底：readTail 传 MAX_SAFE_INTEGER 即整个文件（内部 min(size, maxBytes)）。
+    // Stage-two fallback: passing MAX_SAFE_INTEGER to readTail reads the whole file (it mins size with maxBytes internally).
     return scanForFinalMessage(readTail(transcriptPath, Number.MAX_SAFE_INTEGER));
   } catch {
     return null;

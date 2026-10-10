@@ -1,6 +1,7 @@
-// 工具注册表（对应 Go internal/ai/agent/tools）：Tool/Param 结构 + 18 个
-// 工具。每个工厂只依赖自己需要的端口（tmux/通知器/评估器/fs/状态文件），
-// execute 统一返回 Result—— orchestrator 的循环与供应商协议解耦。
+// Tool registry (counterpart of Go internal/ai/agent/tools): Tool/Param
+// structures + 18 tools. Each factory depends only on the ports it needs
+// (tmux/notifier/assessor/fs/state file); execute uniformly returns Result —
+// decoupling the orchestrator loop from vendor protocols.
 
 import { execFile } from 'node:child_process';
 import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
@@ -10,7 +11,7 @@ import type { ToolSchema } from '../../contracts/ports.ts';
 import type { TmuxClient } from './tmux.ts';
 import { probePane } from './pane_probe.ts';
 
-// ---- 派发安全策略（对应 Go blockedPatterns，逐条移植）---------------------------
+// ---- Dispatch safety policy (counterpart of Go blockedPatterns, ported item by item) ---------------------------
 
 const BLOCKED_PATTERNS: readonly { readonly re: RegExp; readonly label: string }[] = [
   { re: /\brm\b.*(?:(?:-[a-zA-Z]*[rf][a-zA-Z]*[rf])|(?:-[a-zA-Z]*r[a-zA-Z]*\s+-[a-zA-Z]*f)|(?:-[a-zA-Z]*f[a-zA-Z]*\s+-[a-zA-Z]*r)|(--recursive\b.*--force\b)|(--force\b.*--recursive\b))/i, label: 'rm -rf' },
@@ -23,7 +24,7 @@ const BLOCKED_PATTERNS: readonly { readonly re: RegExp; readonly label: string }
   { re: /\)\s*\{.*\|.*&/, label: 'fork bomb' },
 ];
 
-/** 派发内容安全策略：命中即拒绝（策略在发送前，而非发送后补救）。 */
+/** Dispatch content safety policy: reject on match (policy before sending, not remediation after). */
 export const isBlockedCommand = (message: string): string | null => {
   for (const p of BLOCKED_PATTERNS) {
     if (p.re.test(message)) return p.label;
@@ -45,12 +46,12 @@ export interface Tool {
   execute(args: Record<string, unknown>): Promise<Result<string, Error>>;
 }
 
-/** agent 通知器（Stop/Start 事件，版本化等待——wait_until_idle 的根）。 */
+/** Agent notifier (Stop/Start events, versioned waiting — the root of wait_until_idle). */
 export interface NotifierPort {
   snapshot(session: string): number;
   lastStatus(session: string): string;
   working(session: string): boolean;
-  /** 等待比 after 更新的通知；返回取消函数。 */
+  /** Wait for a notification newer than `after`; returns a cancellable promise. */
   waitAfter(session: string, after: number): Promise<void> & { cancel(): void };
 }
 
@@ -59,13 +60,13 @@ export interface Assessment {
   readonly reason: string;
 }
 
-/** 守护者评估器（guardian.go 的 tools.Assessor 对应物）。 */
+/** Guardian assessor (counterpart of tools.Assessor in guardian.go). */
 export interface Assessor {
   assess(session: string, output: string): Promise<Result<Assessment, Error>>;
 }
 
 export interface SessionHealer {
-  /** agent 死亡的会话从快照自愈重启；返回是否成功。 */
+  /** Self-heal restart a session whose agent died, from the snapshot; returns whether it succeeded. */
   healSession(session: string): Promise<boolean>;
 }
 
@@ -73,9 +74,9 @@ export interface ToolsDeps {
   readonly tmux: TmuxClient | null;
   readonly notifier: NotifierPort | null;
   readonly assessor: Assessor | null;
-  /** 裸 shell 自愈（快照恢复）；send-time 门使用。 */
+  /** Bare-shell self-heal (snapshot restore); used by the send-time gate. */
   readonly healer?: SessionHealer;
-  /** 文件工具的工作区根（绝对路径外拒）。 */
+  /** Workspace root for the file tools (paths outside it are rejected). */
   readonly cwd: string;
   readonly statePath?: string;
   readonly log?: (m: string) => void;
@@ -94,7 +95,7 @@ const tool = (
   execute: (args: Record<string, unknown>) => Promise<Result<string, Error>>,
 ): Tool => ({ name, description, parameters, execute });
 
-/** JSON Schema 视图（供应商协议用）。 */
+/** JSON Schema view (for vendor protocols). */
 export const toolSchemas = (tools: readonly Tool[]): ToolSchema[] =>
   tools.map((t) => ({
     name: t.name,
@@ -106,7 +107,7 @@ export const toolSchemas = (tools: readonly Tool[]): ToolSchema[] =>
     },
   }));
 
-// ---- tmux 会话类工具 -------------------------------------------------------------
+// ---- tmux session tools -----------------------------------------------------------------
 
 const sessionTools = (deps: ToolsDeps): readonly Tool[] => {
   const tc = deps.tmux;
@@ -143,7 +144,7 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => {
       if (!r.ok) return r;
       const name = str(a, 'name');
       const message = str(a, 'message');
-      // 门 0：内容安全策略。
+      // Gate 0: content safety policy.
       const blocked = isBlockedCommand(message);
       if (blocked !== null) {
         return toResult(Promise.reject(new Error(`command blocked by safety policy: matched pattern "${blocked}"`)));
@@ -151,7 +152,8 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => {
       if (!(await r.value.hasSession(name))) {
         return toResult(Promise.reject(new Error(`session ${name} not found`)));
       }
-      // 门 1：pane 交互状态。选择菜单绝不盲发——守护者评估后才能动。
+      // Gate 1: pane interaction state. Never send blindly into a selection
+      // menu — the guardian must assess before acting.
       const probe = await probePane(r.value, name);
       if (probe.liveSelection) {
         if (!deps.assessor) {
@@ -165,14 +167,14 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => {
           return toResult(Promise.reject(new Error(`guardian rejected: ${verdict.value.reason}`)));
         }
         if (verdict.value.decision === 'approve') {
-          // 确认后清菜单：回一个「1」，再继续原消息。
+          // After approval, clear the menu: reply "1", then continue with the original message.
           await r.value.sendText(name, '1');
           await new Promise((res2) => setTimeout(res2, 800));
         } else {
           return toResult(Promise.reject(new Error(`guardian undecided (${verdict.value.reason}) — send refused`)));
         }
       }
-      // 门 2：裸 shell → 快照自愈重启 agent。
+      // Gate 2: bare shell → snapshot self-heal restarts the agent.
       const fresh = await probePane(r.value, name);
       if (fresh.foregroundIsShell) {
         if (!deps.healer) {
@@ -219,7 +221,7 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => {
     ], async (a) => {
       const r = requireTmux();
       if (!r.ok) return r;
-      return (await r.value.sendText(str(a, 'to'), `[来自 ${str(a, 'from')} 的消息] ${str(a, 'brief')}`)).ok
+      return (await r.value.sendText(str(a, 'to'), `[message from ${str(a, 'from')}] ${str(a, 'brief')}`)).ok
         ? ok('relayed')
         : toResult(Promise.reject(new Error('relay failed')));
     }),
@@ -240,7 +242,7 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => {
         wait.cancel();
         if (result === 'timeout') return toResult(Promise.reject(new Error(`wait timeout after ${timeoutMs}ms`)));
       } else {
-        // 无通知器（部署简化态）：等待期满后直接返回当前输出。
+        // No notifier (simplified deployment): after the wait elapses, return the current output directly.
         await new Promise((r2) => setTimeout(r2, Math.min(timeoutMs, 5000)));
       }
       const res = await r.value.capturePane(session, 400);
@@ -267,7 +269,7 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => {
       if (!r.ok) return r;
       const res = await toResult(readFile(join(deps.cwd, '.contexts', str(a, 'file')), 'utf8'), 'context file not found');
       if (!res.ok) return res;
-      const brief = `以下是此前会话的上下文存档，请据此继续：\n\n${res.value.slice(-6000)}`;
+      const brief = `The following is the archived context of a previous session; continue from it:\n\n${res.value.slice(-6000)}`;
       return (await r.value.sendText(str(a, 'name'), brief)).ok
         ? ok('context restored')
         : toResult(Promise.reject(new Error('restore failed')));
@@ -285,7 +287,7 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => {
   ];
 };
 
-// ---- 守护者 / 确认类工具 -----------------------------------------------------------
+// ---- Guardian / confirmation tools ---------------------------------------------------------------------------
 
 const confirmationTools = (deps: ToolsDeps): readonly Tool[] => [
   tool('probe_pane', 'Probe a tmux pane for its interactive state (agent alive? trust dialog? selection menu? ready for a task?). Deterministic, no LLM.', [
@@ -322,11 +324,11 @@ const confirmationTools = (deps: ToolsDeps): readonly Tool[] => [
 const requireTmux2 = (deps: ToolsDeps): Result<TmuxClient, Error> =>
   deps.tmux ? ok(deps.tmux) : { ok: false, error: new Error('tmux not available') };
 
-// ---- 文件 / 状态类工具 -------------------------------------------------------------
+// ---- File / state tools -------------------------------------------------------------------
 
 const withinCwd = (cwd: string, p: string): string | null => {
   const abs = resolvePath(cwd, p);
-  return abs.startsWith(cwd) ? abs : null; // 越出工作区拒绝
+  return abs.startsWith(cwd) ? abs : null; // outside the workspace → reject
 };
 
 const fileTools = (deps: ToolsDeps): readonly Tool[] => [
@@ -392,7 +394,7 @@ const stateTools = (deps: ToolsDeps): readonly Tool[] => {
   ];
 };
 
-// ---- 组装（对齐 Go tools.AllTools 的清单）------------------------------------------
+// ---- Assembly (aligned with the list in Go tools.AllTools) --------------------------------------------------
 
 export const makeAllTools = (deps: ToolsDeps): readonly Tool[] => [
   ...sessionTools(deps),

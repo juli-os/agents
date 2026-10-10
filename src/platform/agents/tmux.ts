@@ -1,15 +1,18 @@
-// tmux 执行器（对应 Go internal/runtime/tmux 的命令面）。CLI 驱动：建会话、
-// 发文本（bracketed-paste 保证大文本原子落地）、抓 pane、杀会话。轮询状态
-// 镜像与 keepalive 属于桌面侧体验，服务端部署首版不需要。
+// tmux executor (the command surface of Go internal/runtime/tmux).
+// CLI-driven: create sessions, send text (bracketed-paste guarantees large
+// text lands atomically), capture panes, kill sessions. Polling state
+// mirroring and keepalive belong to the desktop-side experience; the
+// server-side deployment does not need them in v1.
 
 import { execFile } from 'node:child_process';
 import { accessSync, constants } from 'node:fs';
 import { join } from 'node:path';
 import { err, ok, toResult, type Result } from '../shared/result.ts';
 
-/** 可执行探测：accessSync X_OK——existsSync 只查存在，PATH 目录里同名不可执行
- * 文件（数据文件/半成品）execvp 会跳过继续找，误判命中只会把失败拖到运行期
- * EACCES（2026-10-09 Review P2）。 */
+/** Executability probe: accessSync X_OK — existsSync only checks existence;
+ * a same-named non-executable file in a PATH dir (a data file or half-built
+ * artifact) makes execvp skip it and keep searching, so a false hit merely
+ * drags the failure to a runtime EACCES (2026-10-09 Review P2). */
 const canExec = (p: string): boolean => {
   try {
     accessSync(p, constants.X_OK);
@@ -19,12 +22,16 @@ const canExec = (p: string): boolean => {
   }
 };
 
-/** tmux 二进制解析（2026-10-08 新机迁移 GUI 拉起引擎事故）：GUI 子进程默认
- * PATH 只有 /usr/bin:/bin:/usr/sbin:/sbin——homebrew 的 tmux 会 spawn ENOENT
- * （warmup 全失败、派发 2 秒 failed，服务本身正常=最迷惑的形态）。PATH 查得
- * 到仍用 'tmux'（尊重自装覆盖）；查不到按常见安装位兜底成绝对路径。第二参
- * 保留注入位（测试用，形态仍 (p:string)=>boolean）；默认实现自 X_OK 探测起，
- * 语义=「存在且可执行」而非仅存在。 */
+/** tmux binary resolution (2026-10-08 machine-migration GUI-launch engine
+ * incident): GUI child processes get a default PATH of only
+ * /usr/bin:/bin:/usr/sbin:/sbin — homebrew's tmux then spawns ENOENT (warmup
+ * fails across the board, dispatch fails in 2 seconds, while the service
+ * itself stays healthy = the most confusing failure shape). If PATH finds
+ * it, keep 'tmux' (respecting self-installed overrides); if not, fall back
+ * to an absolute path at the common install locations. The second parameter
+ * stays an injection point (for tests; shape remains (p:string)=>boolean);
+ * the default implementation starts from the X_OK probe, meaning "exists and
+ * is executable", not merely exists. */
 export const resolveTmuxBin = (
   pathEnv: string | undefined = process.env['PATH'],
   exists: (p: string) => boolean = canExec,
@@ -33,18 +40,21 @@ export const resolveTmuxBin = (
   for (const candidate of ['/opt/homebrew/bin/tmux', '/usr/local/bin/tmux']) {
     if (exists(candidate)) return candidate;
   }
-  return 'tmux'; // 常见位也没有：保留原名，让 ENOENT 原样显性可诊断
+  return 'tmux'; // not at the common locations either: keep the bare name so the ENOENT stays explicit and diagnosable
 };
 
-/** 进程级解析一次：启动时定死，运行中不漂移（测试直调 resolveTmuxBin 注入）。 */
+/** Resolved once at process level: pinned at startup, no drift at runtime (tests inject by calling resolveTmuxBin directly). */
 export const TMUX_BIN = resolveTmuxBin();
 
-/** tmux 子进程环境：强制声明一个 UTF-8 locale（2026-10-10 launchd 裸环境事故）。
- * tmux 在无任何 LANG/LC_* 的环境里进非 UTF-8 模式，`-F` 格式串里的字面 tab
- * 会被渲染成下划线——listSessionsDetailed 的 tab 分隔整体失效，会话名变成
- * "name_0_cwd_cmd" 复合串（graph/DAG 节点翻倍、终端按错误名 attach 打不开）。
- * 已声明的 locale 不覆盖（尊重显式配置）；tmux 只认字符串含 "UTF-8"，
- * C.UTF-8 在 macOS/Linux 都可用。 */
+/** tmux subprocess environment: force-declare a UTF-8 locale (2026-10-10
+ * launchd bare-env incident). In an environment with no LANG/LC_* at all,
+ * tmux enters non-UTF-8 mode and literal tabs in `-F` format strings render
+ * as underscores — listSessionsDetailed's tab separation breaks wholesale
+ * and session names become compound strings like "name_0_cwd_cmd" (graph/DAG
+ * nodes double; terminals fail to attach under the wrong name). An
+ * already-declared locale is not overridden (respecting explicit config);
+ * tmux only checks that the string contains "UTF-8"; C.UTF-8 works on both
+ * macOS and Linux. */
 export const tmuxEnv = (): NodeJS.ProcessEnv => {
   const hasLocale = (process.env['LANG'] ?? '') + (process.env['LC_ALL'] ?? '')
     + (process.env['LC_CTYPE'] ?? '');
@@ -71,14 +81,19 @@ export interface TmuxSessionInfo {
   readonly cmd: string;
 }
 
-// ---- 提交确认（2026-09-21 冷启动吞 Enter 事故）--------------------------------
-// sendText 的「paste + Enter」在 Claude 冷启动窗口（SessionStart 横幅/ink 重绘）
-// 里 Enter 会被吞：文本躺在输入框、ctx 0%、Stop hook 永远不来——静默挂死 10 分钟
-// 的实测形态。sendTextConfirmed 在发出后 280ms 级轮询验证「输入框已重置」，
-// 被吞只补 Enter（绝不重发文本，防双重粘贴），~4s 内确认或显性失败。
+// ---- Submit confirmation (2026-09-21 cold-start swallowed-Enter incident) --------------------------------
+// sendText's "paste + Enter" can have its Enter swallowed inside Claude's
+// cold-start window (SessionStart banner / ink redraw): text sits in the
+// input box, ctx 0%, the Stop hook never fires — the empirically observed
+// shape of a silent 10-minute hang. sendTextConfirmed polls at ~280ms after
+// sending to verify "the input box has reset"; a swallowed Enter only
+// re-sends Enter (never re-pastes text, guarding against a double paste),
+// confirming or failing explicitly within ~4s.
 
-/** prompt 指纹对：首/末非空行各取前 40 字符——输入框判定锚（框内可见的是末行，
- * 提交后对话记录可见的是首行）。 */
+/** Prompt fingerprint pair: the first 40 chars of the first/last non-empty
+ * line — the anchor for input-box detection (the last line is what is
+ * visible in the box; the first line is what shows in the conversation
+ * history after submission). */
 export const promptFingerprints = (text: string): { readonly head: string; readonly tail: string } => {
   const lines = text.split('\n').map((l) => l.trim()).filter((l) => l !== '');
   return {
@@ -87,9 +102,10 @@ export const promptFingerprints = (text: string): { readonly head: string; reado
   };
 };
 
-/** 输入框状态：tail 在底部输入框区（未提交）；tail 下方出现空的 ❯ 行（已提交，
- * 输入框重置）；两者都不在 pane（已提交滚出视野，或粘贴丢失——由调用方结合
- * 「曾见指纹」区分）。 */
+/** Input-box state: the tail is in the bottom input-box area (not
+ * submitted); an empty ❯ line appears below the tail (submitted, box
+ * reset); neither is in the pane (submitted and scrolled out of view, or
+ * paste lost — the caller distinguishes via "fingerprint seen before"). */
 export const inputBoxState = (pane: string, tail: string): 'cleared' | 'in-box' | 'absent' => {
   if (tail === '') return 'cleared';
   const at = pane.lastIndexOf(tail);
@@ -100,8 +116,9 @@ export const inputBoxState = (pane: string, tail: string): 'cleared' | 'in-box' 
 
 const sleepP = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-/** 提交确认的观测数据（测试器/CLI 的可见性面）：实际补了几次 Enter、
- * 是否触发过整段补粘贴、总耗时。 */
+/** Observability surface of submit confirmation (for testers/CLI): how many
+ * Enters were actually re-sent, whether a full re-paste ever happened,
+ * total elapsed time. */
 export interface SubmitStats {
   readonly enters: number;
   readonly repasted: boolean;
@@ -109,30 +126,36 @@ export interface SubmitStats {
 }
 
 export interface TmuxClient {
-  /** 本 client 绑定的 socket 路径（undefined=default socket）。web 终端
-   * attach 侧用它拼 `-S`——PTY attach 是裸 tmux 命令，不经本 client。 */
+  /** Socket path this client is bound to (undefined = default socket). The
+   * web-terminal attach side uses it to assemble `-S` — a PTY attach is a
+   * bare tmux command that does not go through this client. */
   readonly socketPath?: string;
   hasSession(name: string): Promise<boolean>;
-  /** 原生命令面（pane-probe 等确定性探测用）。 */
+  /** Native command surface (for deterministic probes such as pane-probe). */
   exec(args: readonly string[]): Promise<Result<string, Error>>;
   listSessions(): Promise<readonly string[]>;
-  /** 单条 list-sessions 批量取会话元数据（列表面 N+1 消除）：
-   * `#{session_name}\t#{session_attached}\t#{pane_current_path}\t#{pane_current_command}`。
-   * 无活动 server（零会话）= 正常空态，返回空数组而非错误。 */
+  /** Batch-fetch session metadata with a single list-sessions (kills the
+   * list N+1): `#{session_name}\t#{session_attached}\t#{pane_current_path}\t#{pane_current_command}`.
+   * No running server (zero sessions) = a normal empty state; returns an empty array, not an error. */
   listSessionsDetailed(): Promise<Result<readonly TmuxSessionInfo[], Error>>;
   newSession(name: string, cwd?: string): Promise<Result<void, Error>>;
-  /** 发文本进会话。>10 字符走 bracketed-paste + 回车（原子），短文本直接
-   * send-keys（tmux 对短参数的逐键合并语义与 Go 版一致）。无提交确认——
-   * 任务派发用 sendTextConfirmed。 */
+  /** Send text into a session. >10 chars goes through bracketed-paste +
+   * Enter (atomic); short text uses send-keys directly (tmux's key-merge
+   * semantics for short arguments match the Go version). No submit
+   * confirmation — task dispatch uses sendTextConfirmed. */
   sendText(name: string, text: string): Promise<Result<void, Error>>;
-  /** 确认式发送：paste + Enter 后轮询验证输入框已重置；Enter 被吞只补 Enter
-   * （不重发文本），~20s 内确认或显性失败（guard=submit_unconfirmed）。 */
+  /** Confirmed send: after paste + Enter, poll to verify the input box has
+   * reset; a swallowed Enter only re-sends Enter (no text re-send),
+   * confirming or failing explicitly within ~20s (guard=submit_unconfirmed). */
   sendTextConfirmed(name: string, text: string): Promise<Result<SubmitStats, Error>>;
-  /** 入队式投递（intervene/relay 面，2026-09-23 插话 400 事故）：忙碌会话里
-   * CC 把输入排队消费、输入框不重置是常态——严格提交确认对它永远超时
-   * （实测 20127ms ≈ submitConfirmMs 耗尽）。这里只验证「文本到达过会话」：
-   * 指纹出现在 pane（框内或提交后）即成立；in_box 到期也接受（排队待消费）；
-   * 从未出现 → 补一次粘贴再判，仍无 → paste_lost。 */
+  /** Queued delivery (intervene/relay surface, 2026-09-23 interjection-400
+   * incident): in a busy session CC queues and consumes input while the
+   * input box stays put — strict submit confirmation would always time out
+   * for it (observed 20127ms ≈ submitConfirmMs exhausted). Here we only
+   * verify "the text reached the session": the fingerprint appearing in the
+   * pane (in-box or after submission) suffices; in_box at expiry is also
+   * accepted (queued, pending consumption); never appeared → re-paste once
+   * and re-check; still nothing → paste_lost. */
   sendTextQueued(name: string, text: string): Promise<Result<SubmitStats & { readonly finalState: 'cleared' | 'in_box' }, Error>>;
   capturePane(name: string, lines?: number): Promise<Result<string, Error>>;
   killSession(name: string): Promise<Result<void, Error>>;
@@ -141,13 +164,17 @@ export interface TmuxClient {
 
 export const createTmuxClient = (opts: {
   socketPath?: string;
-  /** 提交确认总预算（默认 20s）：4s 实测产假阴性——agent 忙时 prompt 入队
-   * 稍后才消费（2026-09-21 深夜用户实测「实际上已经提交了」）。 */
+  /** Total submit-confirmation budget (default 20s): 4s proved to yield
+   * false negatives in the field — when the agent is busy, the prompt is
+   * consumed only some time after enqueueing (2026-09-21 late-night user
+   * report: "it had actually been submitted"). */
   submitConfirmMs?: number;
-  /** 入队式投递的观察预算（默认 8s）：到达即返，in_box 到期也接受——
-   * 这里等的不是「提交被消费」（可能要等整个 agent 回合），只是「到达」。 */
+  /** Observation budget for queued delivery (default 8s): return on
+   * arrival; in_box at expiry is also accepted — what we wait for here is
+   * not "the submission being consumed" (that can take a whole agent turn),
+   * just "arrival". */
   queuedConfirmMs?: number;
-  /** 测试注入的睡眠（默认真睡）。 */
+  /** Test-injected sleep (default: real sleep). */
   sleep?: (ms: number) => Promise<void>;
 } = {}): TmuxClient => {
   const socketArgs = opts.socketPath ? ['-S', opts.socketPath] : [];
@@ -159,9 +186,10 @@ export const createTmuxClient = (opts: {
       return run(TMUX_BIN, [...socketArgs, ...args]);
     },
     async hasSession(name) {
-      // run() 返回的已是 Result——此前 .then(ok) 又包一层，导致 .ok 恒真：
-      // 派发因此跳过建会话、直接向不存在的会话 send-keys（can't find pane
-      // 事故根因）。exit 0 = 在，非 0 = 不在。
+      // run() already returns a Result — an earlier .then(ok) wrapped it once
+      // more, making .ok always truthy: dispatch therefore skipped session
+      // creation and send-keys'd straight into a nonexistent session (root
+      // cause of the can't-find-pane incident). exit 0 = exists, non-0 = not.
       const res = await run(TMUX_BIN, [...socketArgs, 'has-session', '-t', name]);
       return res.ok;
     },
@@ -174,7 +202,7 @@ export const createTmuxClient = (opts: {
       const res = await run(TMUX_BIN, [...socketArgs, 'list-sessions', '-F',
         '#{session_name}\t#{session_attached}\t#{pane_current_path}\t#{pane_current_command}']);
       if (!res.ok) {
-        // 零会话 = tmux server 未运行（正常空态），不是错误。
+        // zero sessions = the tmux server is not running (normal empty state), not an error.
         if (res.error.message.includes('no server running')) return ok([]);
         return err(res.error);
       }
@@ -201,8 +229,9 @@ export const createTmuxClient = (opts: {
     },
     async sendText(name, text) {
       if (text.length > 10) {
-        // bracketed-paste：粘贴语义整段进入输入行，回车一次提交——大段
-        // prompt 的原子性保证（对齐 Go 版 SendConfirmed）。
+        // bracketed-paste: paste semantics land the whole block on the input
+        // line and one Enter submits it — the atomicity guarantee for large
+        // prompts (aligned with the Go SendConfirmed).
         const pasted = `\x1b[200~${text}\x1b[201~`;
         const a = await run(TMUX_BIN, [...socketArgs, 'send-keys', '-t', name, '-l', pasted]);
         if (!a.ok) return a;
@@ -236,12 +265,13 @@ export const createTmuxClient = (opts: {
         if (Date.now() >= deadline) {
           return err(new Error(
             seenInBox
-              ? 'submit_unconfirmed: prompt 已入框但连续补 Enter 未被消费（输入框未重置）——任务未确认提交'
-              : 'submit_lost: prompt 首尾指纹始终未出现在 pane——疑似粘贴丢失，任务未确认提交',
+              ? 'submit_unconfirmed: prompt reached the input box but repeated Enter top-ups went unconsumed (input box not reset) — task submission unconfirmed'
+              : 'submit_lost: prompt head/tail fingerprints never appeared in the pane — likely paste loss, task submission unconfirmed',
           ));
         }
-        // 被吞只补 Enter（空输入框上的 Enter 是 no-op，安全）；从没见过指纹 =
-        // 粘贴丢失，补一次完整粘贴（仅一次，防连环双投）。
+        // A swallowed Enter only re-sends Enter (Enter on an empty input box
+        // is a safe no-op); fingerprint never seen = paste lost, re-paste
+        // once in full (once only, guarding against chained double delivery).
         if (!seenInBox && !repasted) {
           repasted = true;
           const again = await this.sendText(name, text);
@@ -267,7 +297,7 @@ export const createTmuxClient = (opts: {
       let seen = false;
       let repasted = false;
       for (;;) {
-        await sleepP(280); // 先给粘贴留渲染时间——立即抓屏会把「还没画出来」误判成丢失
+        await sleepP(280); // give the paste render time first — an immediate capture misreads "not drawn yet" as lost
         const cap = await this.capturePane(name, 10);
         if (!cap.ok) return cap;
         const state = inputBoxState(cap.value, tail);
@@ -276,8 +306,9 @@ export const createTmuxClient = (opts: {
         }
         if (state === 'in-box') {
           seen = true;
-          // 吞 Enter 兜底：空输入框上的 Enter 是 no-op；in_box 时补 Enter
-          // 只会促成提交/入队，不会重复粘贴文本。
+          // swallowed-Enter fallback: Enter on an empty input box is a no-op;
+          // re-sending Enter while in_box can only push submission/enqueue,
+          // never duplicate the pasted text.
           if (enters < 3) {
             enters += 1;
             await this.exec(['send-keys', '-t', name, 'Enter']);
@@ -285,17 +316,17 @@ export const createTmuxClient = (opts: {
         }
         if (Date.now() >= deadline) break;
         if (!seen && !repasted) {
-          // 从没见过指纹 = 粘贴丢失，补一次完整粘贴（仅一次，防连环双投）。
+          // fingerprint never seen = paste lost, re-paste once in full (once only, guarding against chained double delivery).
           repasted = true;
           const again = await this.sendText(name, text);
           if (!again.ok) return again;
         }
       }
-      // 到期仍在框内：忙碌会话的排队形态——到达即投递成立。
+      // Expired while still in-box: the queued shape of a busy session — arrival means delivery succeeded.
       if (seen) {
         return ok({ enters, repasted, finalState: 'in_box', elapsedMs: Date.now() - started });
       }
-      return err(new Error('paste_lost: 指纹从未出现在 pane——粘贴未到达会话输入'));
+      return err(new Error('paste_lost: fingerprint never appeared in the pane — the paste never reached the session input'));
     },
     async capturePane(name, lines = 2000) {
       const res = await run(TMUX_BIN, [

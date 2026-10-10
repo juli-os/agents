@@ -1,7 +1,10 @@
-// PTY 会话（对应 Go 的 creack/pty 面）。零原生依赖实现：/usr/bin/expect
-// 分配伪终端（stty_init 原生设行列，interact 桥接双向字节流）。
-// 限制：无运行中 resize（重连生效）——xterm 前端按固定行列渲染。
-// （node-pty 在本机 posix_spawnp 失败，故走 expect；macOS 自带。）
+// PTY sessions (counterpart of the Go creack/pty surface). Zero
+// native-dependency implementation: /usr/bin/expect allocates the
+// pseudo-terminal (stty_init natively sets rows/cols; interact bridges the
+// byte stream both ways).
+// Limitation: no live resize (takes effect on reconnect) — the xterm front
+// end renders at fixed rows/cols.
+// (node-pty fails at posix_spawnp on this machine, hence expect; macOS ships it.)
 
 import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -30,20 +33,23 @@ export const createPty = (
 ): PtySession => {
   const cols = opts.cols ?? DEFAULT_PTY_COLS;
   const rows = opts.rows ?? DEFAULT_PTY_ROWS;
-  // expect 脚本：stty_init 设行列 → spawn 目标命令（带 pty）→ interact 全双工桥。
+  // expect script: stty_init sets rows/cols → spawn the target command (with a pty) → interact bridges full duplex.
   const inner = cmd.map((a) => `'${a.replace(/'/g, `'\\''`)}'`).join(' ');
   const script = `set stty_init "rows ${rows} cols ${cols}"\nspawn sh -c {exec ${inner}}\ninteract`;
   const child: ChildProcess = spawn('/usr/bin/expect', ['-c', script], {
-    // 继承完整环境，TERM 必须是能力完整的终端（tmux attach 依赖 clear 等能力）。
-    // PATH 不能丢——但它如今真正养的是会话内 login shell 与 claude 自举
-    // （node 等仍按 PATH 找）：内层 tmux 二进制已默认走 TMUX_BIN 解析
-    // （2026-10-08 GUI 残缺 PATH 兜底，残缺 PATH 不再断在引擎这一层）。
+    // Inherit the full environment; TERM must be a fully capable terminal
+    // (tmux attach relies on capabilities such as clear).
+    // PATH must not be lost — but what it really feeds these days is the
+    // in-session login shell and the claude bootstrap (node etc. are still
+    // found via PATH): the inner tmux binary is resolved via TMUX_BIN by
+    // default (2026-10-08 fallback for broken GUI PATHs; a broken PATH no
+    // longer breaks things at the engine layer).
     env: { ...process.env, TERM: 'xterm-256color', ...(opts.env ?? {}) },
     stdio: ['pipe', 'pipe', 'pipe'],
   });
   child.stdout?.setEncoding('utf8');
   child.stdout?.on('data', onData);
-  child.stderr?.on('data', onData); // 终端语义：stderr 也进 pane
+  child.stderr?.on('data', onData); // terminal semantics: stderr also goes to the pane
   const exit = new Promise<number>((resolve) => {
     child.on('exit', (code) => resolve(code ?? 0));
     child.on('error', () => resolve(-1));
@@ -54,26 +60,31 @@ export const createPty = (
     },
     kill() {
       try {
-        child.kill('SIGKILL'); // expect 连 pty 带内层一起走
-      } catch { /* 已死 */ }
+        child.kill('SIGKILL'); // expect takes the pty and the inner process down with it
+      } catch { /* already dead */ }
     },
     exit,
   };
 };
 
-/** attach 一个 tmux 会话，返回 PTY 会话。
+/** Attach to a tmux session, returning a PTY session.
  *
- * 2026-09-20 agent-a 幽灵会话事故：此处曾「不存在则先建」——任意名字的
- * 终端 attach（旧 run 的 @会话芯片、手输名）都会静默 new-session（无 cwd
- * →引擎进程 cwd），用户视角=凭空冒出陌生 Profile。创建是显式动作（与复用
- * 优先路由同裁决）：不存在 → 明确报错；要重建立走 POST /api/sessions 或
- * 引擎派发（绑定会话自带 cwd）。 */
-/** attach 命令拼装（纯函数可测）：专属 socket（tmux_socket_path）必须随行——
- * 引擎 server 与 default socket 分家后，裸 `tmux attach` 会 attach 到错误的
- * server（2026-09-28 专属 socket 切换配套）。首元素必须是 tmux 二进制——
- * 0216446 曾漏掉它（sh -c exec 'attach' → not found → pty 秒退 → xterm
- * attach 全灭），2026-09-29 e2e 实证修复。二进制默认走 TMUX_BIN 解析
- * （2026-10-08 GUI 残缺 PATH 兜底：sh -c exec 同样按 PATH 找 tmux）。 */
+ * 2026-09-20 agent-a phantom-session incident: this used to be "create if
+ * missing" — attaching a terminal with any name (the old run's @session chip,
+ * hand-typed names) would silently new-session (no cwd → the engine process's
+ * cwd), which from the user's perspective conjured an unfamiliar Profile out
+ * of nowhere. Creation is an explicit act (same ruling as the reuse-first
+ * routing): missing → explicit error; to recreate, go through POST
+ * /api/sessions or engine dispatch (dispatched sessions carry their own
+ * cwd). */
+/** Attach-command assembly (pure function, testable): the dedicated socket
+ * (tmux_socket_path) must come along — after the engine server split from the
+ * default socket, a bare `tmux attach` attaches to the wrong server (part of
+ * the 2026-09-28 dedicated-socket switch). The first element must be the tmux
+ * binary — 0216446 once omitted it (sh -c exec 'attach' → not found → the
+ * pty dies instantly → every xterm attach dies), fixed and verified in e2e on
+ * 2026-09-29. The binary is resolved via TMUX_BIN by default (2026-10-08
+ * fallback for broken GUI PATHs: sh -c exec likewise finds tmux via PATH). */
 export const tmuxAttachCommand = (
   socketPath: string | undefined,
   session: string,
@@ -87,7 +98,7 @@ export const attachTmuxPty = async (
   onData?: (chunk: string) => void,
 ): Promise<Result<PtySession, Error>> => {
   if (!(await tmux.hasSession(session))) {
-    return err(new Error(`会话 ${session} 不存在——终端不代建（创建是显式动作：POST /api/sessions 或由引擎派发）`));
+    return err(new Error(`Session ${session} does not exist — the terminal does not create it implicitly (creation is an explicit act: POST /api/sessions or engine dispatch)`));
   }
   return ok(createPty(tmuxAttachCommand(tmux.socketPath, session), opts, onData));
 };

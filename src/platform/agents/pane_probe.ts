@@ -1,19 +1,20 @@
-// pane 探针（对应 Go tools/pane_probe.go）：一次 capture 推导面板的完整
-// 交互状态——确定性启发式，零 LLM。发射器与发送方共用同一套"什么算就绪"。
+// Pane probe (counterpart of Go tools/pane_probe.go): one capture derives the
+// pane's full interaction state — deterministic heuristics, zero LLM. The
+// emitter and the sender share the same definition of "what counts as ready".
 
 import type { TmuxClient } from './tmux.ts';
 
 export interface PaneProbe {
   readonly session: string;
-  /** 裸 shell 占着面板（agent 未启动或已退出）。 */
+  /** A bare shell holds the pane (agent not started, or already exited). */
   readonly foregroundIsShell: boolean;
   readonly agentAlive: boolean;
   readonly agent: string;
-  /** CC 的信任/引导对话框——可程序化安全接受。 */
+  /** CC's trust/onboarding dialog — safe to accept programmatically. */
   readonly trustDialog: boolean;
-  /** 任何带编号的选择项（权限菜单/模型选择器）——绝不盲点，需守护者评估。 */
+  /** Any numbered selection item (permission menu / model picker) — never clicked blindly; a guardian must assess it. */
   readonly liveSelection: boolean;
-  /** agent 活着且输入光标在最后一行——可以派任务。 */
+  /** Agent is alive and the input cursor is on the last line — a task can be dispatched. */
   readonly ready: boolean;
   readonly reason: string;
 }
@@ -21,7 +22,7 @@ export interface PaneProbe {
 const AGENT_NAMES = ['claude', 'codex', 'copilot', 'aider'] as const;
 
 import { paneAwaitingInput } from '../shared/paneFingerprint.ts';
-export { paneAwaitingInput }; // 转发：探针消费方零改动
+export { paneAwaitingInput }; // re-export: probe consumers need zero changes
 
 const paneCurrentCommand = async (tmux: TmuxClient, session: string): Promise<string> => {
   const res = await tmux.exec(['list-panes', '-t', session, '-F', '#{pane_current_command}']);
@@ -48,7 +49,7 @@ export const probePane = async (tmux: TmuxClient, session: string): Promise<Pane
   const pane = cap.value;
   const lower = pane.toLowerCase();
   const agent = AGENT_NAMES.find((a) => cmd.includes(a) || lower.includes(a)) ?? cmd;
-  const alive = true; // 前台命令非 shell 且 pane 可读 → 进程层面活着
+  const alive = true; // foreground command is not a shell and the pane is readable → alive at the process level
   const trustDialog = lower.includes('do you trust') || lower.includes('trust this');
   const liveSelection = /❯\s*\d|[1-9]\.\s+(yes|no|allow|deny)/i.test(pane);
   const lastLine = pane.trimEnd().split('\n').at(-1) ?? '';

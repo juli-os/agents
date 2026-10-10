@@ -1,15 +1,17 @@
-// L0 的对外端口契约（type-only，零运行时代码）：引擎注入实现，包内只认形状。
-// 来源三处的主仓定义逐字拷贝（contracts/ports.ts 的 SyncDispatcherPort、
-// platform/llm/chat.ts 的聊天端口族）——L0 不依赖 L5 的 llm 实现，只依赖形状。
+// L0's outward port contracts (type-only, zero runtime code): the engine
+// injects implementations; inside this package only the shapes matter. Copied
+// verbatim from the main-repo definitions in three places (SyncDispatcherPort
+// from contracts/ports.ts, the chat port family from platform/llm/chat.ts) —
+// L0 does not depend on L5's llm implementation, only on the shapes.
 
 import type { Result } from '../platform/shared/result.ts';
 
-/** ACP 在途 turn 的同步派发口（interrupt 优先走 ACP 在途通道）。 */
+/** Synchronous dispatch port for an in-flight ACP turn (interrupts prefer the in-flight ACP channel). */
 export interface SyncDispatcherPort {
   dispatchSync(source: string, session: string, text: string): Promise<Result<string, Error>>;
 }
 
-/** LLM 工具的 JSON Schema（parameters）。 */
+/** JSON Schema (parameters) for an LLM tool. */
 export interface ToolSchema {
   readonly name: string;
   readonly description: string;
@@ -17,7 +19,7 @@ export interface ToolSchema {
 }
 
 export interface ToolCallRequest {
-  /** {role, content, toolCalls?, toolResults?} 的完整消息历史。 */
+  /** Full message history of {role, content, toolCalls?, toolResults?}. */
   readonly messages: readonly ChatMessage[];
   readonly tools?: readonly ToolSchema[];
   readonly model?: string;
@@ -29,7 +31,7 @@ export interface ChatMessage {
   readonly role: 'user' | 'assistant' | 'tool' | 'system';
   readonly content: string;
   readonly toolCalls?: readonly { readonly id: string; readonly name: string; readonly arguments: string }[];
-  /** role=tool 时：上一轮 assistant toolCalls 的结果。 */
+  /** When role=tool: results of the previous assistant turn's toolCalls. */
   readonly toolResults?: readonly { readonly id: string; readonly name: string; readonly content: string; readonly isError?: boolean }[];
   readonly system?: string;
 }
@@ -41,7 +43,7 @@ export interface ChatResult {
   readonly toolCalls: readonly { readonly id: string; readonly name: string; readonly arguments: string }[];
 }
 
-/** 聊天 LLM 端口：编排器/语音理解只认此形状，实现由宿主注入。 */
+/** Chat LLM port: the orchestrator and voice understanding depend only on this shape; the host injects the implementation. */
 export interface ChatLlmPort {
   readonly name: string;
   chat(req: ToolCallRequest): Promise<Result<ChatResult, Error>>;

@@ -1,7 +1,10 @@
-// 语音通话状态机（对应 Go cmd/gui/chat_voice.go）：三模式配置表（闲聊/落实/
-// 查询——提示词原文保留）、```plan 块暂存、确认短语匹配（宽松确认集只在
-// 已提议阶段安全）、确认后确定性派发（绕过派发门）。派发永远只走
-// ConfirmPlan → 安全发送，编排器绝不自己派发。
+// Voice-call state machine (counterpart of Go cmd/gui/chat_voice.go): a
+// three-mode config table (chat/plan/query — prompt text kept verbatim
+// below), ```plan block staging, confirmation-phrase matching (the loose
+// confirmation set is safe only in the proposed phase), and deterministic
+// dispatch after confirmation (bypassing the dispatch gate). Dispatch always
+// goes through ConfirmPlan → safe send; the orchestrator never dispatches on
+// its own.
 
 import type { JsonRecord } from '../shared/json.ts';
 import { truncate } from '../shared/json.ts';
@@ -19,7 +22,7 @@ export interface StagedPlan {
   readonly brief: string;
 }
 
-// ---- 模式前缀（逐字保留——这是给语音模型的行为协议）-----------------------------
+// ---- Mode prefixes (functional LLM behavior protocol — Chinese kept verbatim) -----------------------------
 
 const PLAN_MODE_PREFIX = `[语音通话模式·落实] 用简洁口语回答：不用表格、代码块或 markdown 符号；可用「第一、第二」短要点；尽量短以节省语音额度。
 本次通话分三阶段，你只能在前两阶段行动：
@@ -49,12 +52,12 @@ export const callModeConfigs: Readonly<Record<CallMode, CallModeConfig>> = {
   query: { prefix: QUERY_MODE_PREFIX, blockAllTools: false, stagePlans: false },
 };
 
-/** 通话激活时被拒绝的派发类工具（读/观察类保持放行——讨论要有据）。 */
+/** Dispatch-class tools rejected while a call is active (read/observe tools stay allowed — discussion needs evidence). */
 export const VOICE_BLOCKED_TOOLS: ReadonlySet<string> = new Set([
   'send_to_session', 'relay_message', 'create_session', 'respond_confirmation',
 ]);
 
-// ---- 确认短语（宽松确认集只在已提议阶段使用；歧义一律回到讨论）---------------------
+// ---- Confirmation phrases (functional: they match Chinese user speech; the loose set is used only in the proposed phase; ambiguity always falls back to discussion) -----
 
 const CONFIRM_KEYWORDS = ['确认', '落实', '派发', '执行吧', '发吧', '就这样', 'yes', 'confirm', 'confirmed', 'approved', 'go ahead', 'do it'];
 const TERSE_AFFIRMATIVES = ['可以', '好的', '好了', '对的', '是的', '好', '对', '行', '没问题', 'ok', 'okay', 'sure'];
@@ -64,7 +67,9 @@ export const isConfirmPhrase = (s: string): boolean => {
   for (const k of CONFIRM_KEYWORDS) {
     if (t.includes(k)) return true;
   }
-  // 短肯定句：仅当整句很短时——「对」/「好的」在提议后的独立应答才算确认。
+  // Terse affirmatives: only when the whole utterance is short — a bare
+  // affirmative counts as confirmation only as a standalone reply to a
+  // proposal.
   if ([...t].length <= 6) {
     for (const k of TERSE_AFFIRMATIVES) {
       if (t.includes(k)) return true;
@@ -73,7 +78,7 @@ export const isConfirmPhrase = (s: string): boolean => {
   return false;
 };
 
-/** ```plan 围栏块提取（非贪婪到收尾围栏）。 */
+/** ```plan fenced-block extraction (non-greedy up to the closing fence). */
 export const extractPlanBlock = (text: string): StagedPlan | null => {
   const m = /```plan\s*([\s\S]*?)\s*```/.exec(text);
   if (!m) return null;
@@ -92,7 +97,7 @@ export const extractPlanBlock = (text: string): StagedPlan | null => {
   }
 };
 
-// ---- 通话会话状态机 ----------------------------------------------------------------
+// ---- Call session state machine -------------------------------------------------------------------------
 
 export type CallPhase = 'discuss' | 'proposed';
 
@@ -104,7 +109,7 @@ export interface VoiceEvent {
 export interface VoiceCallDeps {
   readonly llm: ChatLlmPort;
   readonly model: string;
-  /** 确认后的确定性派发（SafeSendWithHealer 对应物：门 + 自愈 + 发送）。 */
+  /** Deterministic dispatch after confirmation (counterpart of SafeSendWithHealer: gate + self-heal + send). */
   readonly dispatch: (session: string, brief: string) => Promise<Result<void, Error>>;
   readonly log?: (m: string) => void;
 }
@@ -148,8 +153,10 @@ export const createVoiceCall = (mode: CallMode, deps: VoiceCallDeps): VoiceCall 
 
     async turn(text) {
       const events: VoiceEvent[] = [];
-      // 已提议阶段：先解读确认意图——明确确认即派发（不经编排器回合）；
-      // 其余视为修订/继续讨论，丢弃暂存计划重新来。
+      // Proposed phase: interpret confirmation intent first — an explicit
+      // confirmation dispatches immediately (no orchestrator turn);
+      // anything else is treated as revision/continued discussion, dropping
+      // the staged plan and starting over.
       if (staged !== null) {
         if (isConfirmPhrase(text.trim().toLowerCase())) {
           const confirm = await (this as VoiceCall).confirmPlan();
@@ -191,7 +198,7 @@ export const createVoiceCall = (mode: CallMode, deps: VoiceCallDeps): VoiceCall 
       const msg = `已派发给 @${plan.session} ✓`;
       emit(events, 'chat:system', msg);
       phase = 'discuss';
-      deps.log?.(`[voice] 派发 ${plan.session}: ${truncate(plan.brief, 60)}`);
+      deps.log?.(`[voice] dispatched ${plan.session}: ${truncate(plan.brief, 60)}`);
       return { events, reply: msg };
     },
 
@@ -205,7 +212,7 @@ export const createVoiceCall = (mode: CallMode, deps: VoiceCallDeps): VoiceCall 
   };
 };
 
-/** 语音回合的派发门：通话激活时拦截派发类工具（编排器 hooks 的铁腕位）。 */
+/** Dispatch gate for voice turns: intercept dispatch-class tools while a call is active (the iron-fist position of the orchestrator hooks). */
 export const voiceGateHook = (
   callActive: () => boolean,
   mode: () => CallMode,
