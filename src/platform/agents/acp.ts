@@ -1,15 +1,14 @@
-// ACP synchronous executor (counterpart of Go internal/runtime/acp): stdio
-// newline-delimited JSON-RPC to the codex app-server. Protocol-level
-// completion signals replace screen capture:
+// ACP 同步执行器（对应 Go internal/runtime/acp）：codex app-server 的
+// stdio newline-delimited JSON-RPC。协议级完成信号替代屏幕抓取：
 //
-//	initialize {clientInfo} → initialized (notification without an id)
+//	initialize {clientInfo} → initialized（无 id 通知）
 //	thread/start {cwd, model?}  → result.thread.id
 //	turn/start {threadId, input:[{type:"text",text}]} → turn/started →
-//	    item/* (the agentMessage item is the final reply) → turn/completed {turn:{status}}
+//	    item/*（agentMessage 的 item 即最终答复）→ turn/completed {turn:{status}}
 //	turn/interrupt {threadId, turnId?}
 //
-// Completion is protocol-level: dispatchSync blocks until turn/completed and
-// the final message lands directly — no hook/capture round trip.
+// 完成是协议级的：DispatchSync 阻塞到 turn/completed，最终消息直接落地，
+// 不经 hook/capture 往返。
 
 import { spawn, type ChildProcess } from 'node:child_process';
 import { err, ok, toResult, type Result } from '../shared/result.ts';
@@ -40,20 +39,19 @@ interface AcptThread {
   lastMessage: string;
   lastError: string;
   waiters: ((status: string) => void)[];
-  /** Completion that arrives early (on stdio, a notification may beat
-   * dispatchSync's waiter registration) — counterpart of Go's buffered
-   * turnDone channel; drained before prompting. */
+  /** 先到的完成（stdio 里通知可能先于 dispatchSync 挂上 waiter）——Go 的
+   * buffered turnDone 通道对应物；prompt 前排空。 */
   pendingCompletion: string | null;
 }
 
 export interface AcpDeps {
-  /** Launch command (e.g. ["codex", "app-server"]). */
+  /** 启动命令（如 ["codex", "app-server"]）。 */
   readonly command: readonly string[];
   readonly model: string;
-  /** Subprocess env injection (codex's GLM provider reads GLM_API_KEY). */
+  /** 子进程 env 注入（codex 的 GLM provider 读 GLM_API_KEY）。 */
   readonly apiKey: string;
   readonly log: (msg: string) => void;
-  /** Just pass process.env; undefined values are stripped before launch. */
+  /** 传 process.env 即可；undefined 值在启动前被剔除。 */
   readonly env?: Readonly<Record<string, string | undefined>>;
 }
 
@@ -69,7 +67,7 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
   let nextId = 0;
   let initialized = false;
   const pending = new Map<number, Pending>();
-  const threads = new Map<string, AcptThread>(); // session name → ACP thread
+  const threads = new Map<string, AcptThread>(); // session 名 → ACP thread
 
   const writeJson = (v: unknown): Promise<void> =>
     new Promise((resolve, reject) => {
@@ -123,7 +121,7 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
         break;
       }
       case 'item/*': case 'item/agentMessage/delta': {
-        // The agentMessage item's text is the final reply (Go setLastMessage semantics: overwrite).
+        // agentMessage 的 item 文本就是最终答复（Go setLastMessage 语义：覆盖）。
         if (t && n.params?.item?.type === 'agentMessage' && typeof n.params.item.text === 'string') {
           t.lastMessage = n.params.item.text;
         }
@@ -141,7 +139,7 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
   const kill = (): void => {
     try {
       proc?.kill('SIGKILL');
-    } catch { /* already dead */ }
+    } catch { /* 已死 */ }
     proc = null;
     initialized = false;
   };
@@ -153,10 +151,10 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
       Object.entries(deps.env ?? {}).filter((entry): entry is [string, string] => entry[1] !== undefined),
     );
     if (deps.apiKey !== '' && env['GLM_API_KEY'] === undefined) {
-      env['GLM_API_KEY'] = deps.apiKey; // codex's GLM provider reads this
+      env['GLM_API_KEY'] = deps.apiKey; // codex 的 GLM provider 读这个
     }
     proc = spawn(deps.command[0] ?? '', deps.command.slice(1), { env, stdio: ['pipe', 'pipe', 'pipe'] });
-    // spawn itself failing (ENOENT etc.) fires an 'error' event: without a handler the whole process crashes.
+    // spawn 本身失败（ENOENT 等）发的是 'error' 事件：不接则整进程崩。
     proc.on('error', (e) => {
       for (const p of pending.values()) {
         p.resolve({ error: { code: -32000, message: `acp: spawn failed: ${e.message}` } });
@@ -166,7 +164,7 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
       proc = null;
     });
     proc.on('exit', () => {
-      // Child process death: every in-flight call fails immediately (no silent hang).
+      // 子进程死亡：所有在途调用立即失败（不静默挂死）。
       for (const p of pending.values()) {
         p.resolve({ error: { code: -32000, message: 'acp: agent process exited' } });
       }
@@ -189,7 +187,7 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
           } else if (typeof v.method === 'string') {
             onNotify({ method: v.method, params: v.params });
           }
-        } catch { /* skip malformed lines */ }
+        } catch { /* 非法行跳过 */ }
       }
     });
     const init = await call('initialize', {
@@ -223,23 +221,21 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
     void source;
     const started = await startChild();
     if (!started.ok) return err(started.error);
-    // The session name is the agent profile name; cwd falls back to the home
-    // directory (Go: registered project directory first).
+    // 会话名即 agent profile 名；cwd 用家目录兜底（Go：注册项目目录优先）。
     const t = await ensureThread(session, deps.env?.['JULI_ACP_CWD'] ?? process.cwd());
     if (!t.ok) return err(t.error);
     const thread = t.value;
     thread.lastMessage = '';
     thread.lastError = '';
-    thread.pendingCompletion = null; // drain a stale completion (Go Prompt's drain semantics)
+    thread.pendingCompletion = null; // 排空陈旧完成（Go Prompt 的 drain 语义）
     const prompt = await call('turn/start', {
       threadId: thread.threadId,
       input: [{ type: 'text', text }],
     }, rpcTimeoutMs);
     if (!prompt.ok) return err(prompt.error);
 
-    // Check for an early completion first (the notification can arrive in the
-    // same stdio batch as the RPC response, before the waiter registers);
-    // otherwise park a waiter on the protocol signal.
+    // 先查先到的完成（通知可能和 RPC 响应同批到达，早于 waiter 注册），
+    // 否则挂 waiter 等协议信号。
     const status = await toResult(
       thread.pendingCompletion !== null
         ? Promise.resolve(thread.pendingCompletion)

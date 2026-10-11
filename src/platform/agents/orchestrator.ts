@@ -1,8 +1,6 @@
-// Orchestrator (counterpart of Go internal/ai/agent/orchestrator.go +
-// commands.go + guardian.go): slash-command routing → tool-calling loop
-// (pre/post hook interception, context trimming, empty-reply nudge retry) →
-// event-stream callbacks. Functional factory + immutable snapshot message
-// history.
+// 编排器（对应 Go internal/ai/agent/orchestrator.go + commands.go + guardian.go）：
+// slash 命令分流 → tool-calling 循环（hooks 前后拦截、上下文裁剪、空回复
+// 唤醒重试）→ 事件流回调。函数式工厂 + 不可变快照消息历史。
 
 import { ok, toResult, type Result } from '../shared/result.ts';
 import { truncate, type JsonRecord } from '../shared/json.ts';
@@ -10,7 +8,7 @@ import type { Clock } from '../shared/clock.ts';
 import type { ChatLlmPort, ChatMessage, ToolCallRequest } from '../../contracts/ports.ts';
 import { makeAllTools, toolSchemas, type Tool, type Assessor } from './tools.ts';
 
-// ---- Event stream -----------------------------------------------------------------------
+// ---- 事件流 -----------------------------------------------------------------------
 
 export type OrchestratorEvent =
   | { readonly type: 'text'; readonly content: string }
@@ -21,7 +19,7 @@ export type OrchestratorEvent =
 
 export type Emit = (e: OrchestratorEvent) => void;
 
-// ---- hooks (pre/post tool-call interception) ------------------------------------------------
+// ---- hooks（前/后工具调用拦截）------------------------------------------------------
 
 export type HookType = 'before_tool_call' | 'after_tool_call' | 'agent_start' | 'agent_stop';
 
@@ -30,10 +28,10 @@ export interface HookPayload {
   readonly tool?: string;
   readonly args?: JsonRecord;
   readonly result?: string;
-  /** before_tool_call returning block=true intercepts that call (the guardian's iron-fist position). */
+  /** before_tool_call 返回 block=true 拦截该次调用（guardian 铁腕位）。 */
   readonly block?: boolean;
   readonly blockReason?: string;
-  /** after_tool_call returning modifiedResult replaces the tool output. */
+  /** after_tool_call 返回 modifiedResult 替换工具输出。 */
   readonly modifiedResult?: string;
 }
 
@@ -53,14 +51,14 @@ export const createHookManager = (): HookManager => {
         try {
           const r = await h(p);
           if (r !== undefined) return r;
-        } catch { /* a hook error does not break the main chain */ }
+        } catch { /* hook 异常不阻断主链 */ }
       }
       return p;
     },
   };
 };
 
-// ---- slash commands --------------------------------------------------------------------
+// ---- slash 命令 --------------------------------------------------------------------
 
 export interface SlashCommand {
   readonly name: string;
@@ -102,20 +100,20 @@ export const registerDefaultCommands = (
       const name = args[0] ?? '';
       if (name === '') return void emit({ type: 'text', content: 'usage: /create <name> [working-dir]' });
       const res = await deps.createSession(name, args[1]);
-      emit({ type: 'text', content: res.ok ? `Session ${name} created` : `Creation failed: ${res.error.message}` });
+      emit({ type: 'text', content: res.ok ? `会话 ${name} 已创建` : `创建失败: ${res.error.message}` });
     },
   });
   registry.register({
     name: 'switch', usage: '/switch <name>', description: 'Switch the active agent session',
     async run(args, emit) {
-      emit({ type: 'text', content: args[0] ? `Switched to ${args[0]}` : 'usage: /switch <name>' });
+      emit({ type: 'text', content: args[0] ? `已切换到 ${args[0]}` : 'usage: /switch <name>' });
     },
   });
   registry.register({
     name: 'list', usage: '/list', description: 'List live sessions',
     async run(_args, emit) {
       const sessions = (await deps.listSessions?.()) ?? [];
-      emit({ type: 'text', content: sessions.length > 0 ? sessions.join('\n') : '(no live sessions)' });
+      emit({ type: 'text', content: sessions.length > 0 ? sessions.join('\n') : '(无活动会话)' });
     },
   });
   registry.register({
@@ -124,7 +122,7 @@ export const registerDefaultCommands = (
   });
 };
 
-// ---- Guardian assessor (guardian.go) ------------------------------------------------------
+// ---- 守护者评估器（guardian.go）------------------------------------------------------
 
 export const DEFAULT_ASSESSOR_PROMPT = `You are a session guardian. You monitor a coding agent in a terminal and decide how to respond to its confirmation prompts.
 
@@ -155,7 +153,7 @@ export const createSessionAssessor = (
       maxTokens: 200,
       messages: [
         { role: 'system', content: prompt },
-        { role: 'user', content: `Session: ${sessionName}\n\nRecent output:\n${truncate(output, 3000)}` },
+        { role: 'user', content: `会话: ${sessionName}\n\n最近的输出:\n${truncate(output, 3000)}` },
       ],
     });
     if (!res.ok) return res;
@@ -175,7 +173,7 @@ export const createSessionAssessor = (
 
 import type { Assessment } from './tools.ts';
 
-// ---- Orchestrator --------------------------------------------------------------------------
+// ---- 编排器 --------------------------------------------------------------------------
 
 export interface OrchestratorDeps {
   readonly llm: ChatLlmPort;
@@ -188,14 +186,14 @@ export interface OrchestratorDeps {
   readonly clock?: Clock;
   readonly callTimeoutMs?: number;
   readonly log?: (m: string) => void;
-  /** Usage accounting (one entry per LLM call). */
+  /** 用量入账（每次 LLM 调用一条）。 */
   readonly usage?: (r: { model: string; inputTokens?: number; outputTokens?: number; note: string }) => void;
-  /** Skill registry: /skill activates, injected into the next input turn (one-shot semantics). */
+  /** 技能注册表：/skill 激活，下一轮输入注入（单次语义）。 */
   readonly skills?: import('./skills.ts').SkillRegistry;
 }
 
 export interface Orchestrator {
-  /** Handle one user input: slash-command routing or the full tool-calling loop. */
+  /** 处理一条用户输入：slash 命令分流或完整 tool-calling 循环。 */
   handle(input: string, emit: Emit): Promise<void>;
   readonly messages: readonly ChatMessage[];
   reset(): void;
@@ -204,7 +202,7 @@ export interface Orchestrator {
 }
 
 const EMPTY_AFTER_TOOLS_NUDGE =
-  'Based on the tool call results above, answer my previous question in brief natural language. Do not call tools again; give the summary directly.';
+  '请根据上面的工具调用结果，用简短的自然语言回答我之前的问题。不要再次调用工具，直接给出总结。';
 
 export const createOrchestrator = (deps: OrchestratorDeps): Orchestrator => {
   let messages: ChatMessage[] = [];
@@ -215,7 +213,7 @@ export const createOrchestrator = (deps: OrchestratorDeps): Orchestrator => {
 
   const append = (m: ChatMessage): void => {
     messages = [...messages, m];
-    // Context trimming: keep the most recent maxContext messages (Go's maxContextMessages).
+    // 上下文裁剪：保住最近 maxContext 条（Go 的 maxContextMessages）。
     if (messages.length > maxContext) messages = messages.slice(-maxContext);
   };
 
@@ -245,9 +243,9 @@ export const createOrchestrator = (deps: OrchestratorDeps): Orchestrator => {
   };
 
   const handleLLM = async (input: string, emit: Emit): Promise<void> => {
-    // Activated skill: injected ahead of this turn's input (one-shot semantics).
+    // 激活态技能：注入到本轮输入前面（单次语义）。
     const skill = deps.skills?.takeActive() ?? null;
-    const finalInput = skill !== null ? `${skill.prompt}\n\n[Current request]\n${input}` : input;
+    const finalInput = skill !== null ? `${skill.prompt}\n\n【本轮请求】${input}` : input;
     append({ role: 'user', content: finalInput });
     let hadTools = false;
     for (let turn = 0; turn < 25; turn++) {
@@ -270,8 +268,7 @@ export const createOrchestrator = (deps: OrchestratorDeps): Orchestrator => {
       append({ role: 'assistant', content: result.content, toolCalls: result.toolCalls });
 
       if (result.toolCalls.length === 0) {
-        // GLM-class models may return empty content on the turn after tool
-        // use — nudge it into summarizing (nudge once only).
+        // GLM 类模型在工具后一轮可能只回空内容——推一把让它总结（只推一次）。
         if (hadTools && result.content === '') {
           hadTools = false;
           log('orchestrator: empty content after tool use, nudging');
@@ -291,7 +288,7 @@ export const createOrchestrator = (deps: OrchestratorDeps): Orchestrator => {
       }
       append({ role: 'tool', content: '', toolResults: results });
     }
-    emit({ type: 'text', content: 'Tool-call turn limit reached; aborted.' });
+    emit({ type: 'text', content: '工具调用轮数达到上限，已中止。' });
     emit({ type: 'done' });
   };
 
@@ -322,7 +319,7 @@ const safeArgs = (s: string): JsonRecord => {
   }
 };
 
-/** Register the skill slash commands (/skills listing, /skill <name> [args] activation). */
+/** 注册技能类 slash 命令（/skills 列表、/skill <name> [args] 激活）。 */
 export const registerSkillCommands = (
   registry: CommandRegistry,
   skills: import('./skills.ts').SkillRegistry | undefined,
@@ -333,7 +330,7 @@ export const registerSkillCommands = (
     name: 'skills', usage: '/skills', description: 'List available skills',
     async run(_args, emit) {
       emit({ type: 'text', content: skills.all.length === 0
-        ? '(no skills loaded — put .md files into the skills directory)'
+        ? '（无已加载技能——把 .md 放进 skills 目录）'
         : skills.all.map((s) => `${s.name} — ${s.description}`).join('\n') });
     },
   });
@@ -343,7 +340,7 @@ export const registerSkillCommands = (
       const name = args[0] ?? '';
       if (name === '') return void emit({ type: 'text', content: 'usage: /skill <name> [args...]' });
       const res = skills.activate(name, args.slice(1));
-      emit({ type: 'text', content: res.ok ? `Skill ${name} activated (takes effect on the next message)` : res.error.message });
+      emit({ type: 'text', content: res.ok ? `技能 ${name} 已激活（对下一条消息生效）` : res.error.message });
     },
   });
   void emitText;
