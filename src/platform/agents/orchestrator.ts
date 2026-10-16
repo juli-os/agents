@@ -6,7 +6,7 @@ import { ok, toResult, type Result } from '../shared/result.ts';
 import { truncate, type JsonRecord } from '../shared/json.ts';
 import type { Clock } from '../shared/clock.ts';
 import type { ChatLlmPort, ChatMessage, ToolCallRequest } from '../../contracts/ports.ts';
-import { makeAllTools, toolSchemas, type Tool, type Assessor } from './tools.ts';
+import { makeAllTools, toolSchemas, type Tool, type Assessor, type Assessment } from './tools.ts';
 
 // ---- 事件流 -----------------------------------------------------------------------
 
@@ -171,7 +171,6 @@ export const createSessionAssessor = (
   },
 });
 
-import type { Assessment } from './tools.ts';
 
 // ---- 编排器 --------------------------------------------------------------------------
 

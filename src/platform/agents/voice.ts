@@ -3,7 +3,6 @@
 // 已提议阶段安全）、确认后确定性派发（绕过派发门）。派发永远只走
 // ConfirmPlan → 安全发送，编排器绝不自己派发。
 
-import type { JsonRecord } from '../shared/json.ts';
 import { truncate } from '../shared/json.ts';
 import type { Result } from '../shared/result.ts';
 import type { ChatLlmPort } from '../../contracts/ports.ts';
@@ -59,10 +58,21 @@ export const VOICE_BLOCKED_TOOLS: ReadonlySet<string> = new Set([
 const CONFIRM_KEYWORDS = ['确认', '落实', '派发', '执行吧', '发吧', '就这样', 'yes', 'confirm', 'confirmed', 'approved', 'go ahead', 'do it'];
 const TERSE_AFFIRMATIVES = ['可以', '好的', '好了', '对的', '是的', '好', '对', '行', '没问题', 'ok', 'okay', 'sure'];
 
+/** 多词英文短语按词边界匹配，且否定前缀（don't / do not / never / stop）
+ * 不算确认——子串匹配会把「don't do it」当「do it」误派发。中文短语
+ * 语义不动（无词边界概念，维持 includes）。 */
+const NEGATIVE_PREFIX = /\b(?:do not|don'?t|never|stop)\b[^.!?]*$/;
+const multiwordEnMatch = (t: string, k: string): boolean => {
+  const m = new RegExp(`\\b${k}\\b`).exec(t);
+  return m !== null && !NEGATIVE_PREFIX.test(t.slice(0, m.index));
+};
+
 export const isConfirmPhrase = (s: string): boolean => {
   const t = s.toLowerCase().trim();
   for (const k of CONFIRM_KEYWORDS) {
-    if (t.includes(k)) return true;
+    if (/^[a-z]+ [a-z]+$/.test(k)) {
+      if (multiwordEnMatch(t, k)) return true;
+    } else if (t.includes(k)) return true;
   }
   // 短肯定句：仅当整句很短时——「对」/「好的」在提议后的独立应答才算确认。
   if ([...t].length <= 6) {
@@ -217,4 +227,3 @@ export const voiceGateHook = (
   return p;
 };
 
-void ({} as JsonRecord);

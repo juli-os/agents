@@ -178,6 +178,3 @@ export const createProvisioningDispatch = (opts: ProvisioningOpts) => {
     return r.ok ? ok(undefined) : r;
   };
 };
-
-// 供测试与调用方引用就绪判定的语义出口。
-export { probePane, ok };
