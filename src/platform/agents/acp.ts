@@ -11,6 +11,7 @@
 // 不经 hook/capture 往返。
 
 import { spawn, type ChildProcess } from 'node:child_process';
+import { StringDecoder } from 'node:string_decoder';
 import { err, ok, toResult, type Result } from '../shared/result.ts';
 import type { SyncDispatcherPort } from '../../contracts/ports.ts';
 
@@ -120,19 +121,19 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
         }
         break;
       }
-      case 'item/*': case 'item/agentMessage/delta': {
-        // agentMessage 的 item 文本就是最终答复（Go setLastMessage 语义：覆盖）。
-        if (t && n.params?.item?.type === 'agentMessage' && typeof n.params.item.text === 'string') {
-          t.lastMessage = n.params.item.text;
-        }
-        break;
-      }
       case 'error': {
         if (t && n.params?.error?.message) t.lastError = n.params.error.message;
         break;
       }
-      default:
+      default: {
+        // case 标签是字面量非通配：非 delta 的 item/<type>（如整条
+        // item/agentMessage）落 default——按 item/ 前缀收口（delta 路径不变）。
+        // 空文本不覆盖：非 delta 整条为空时保住 delta 已积累的消息（对齐收口前语义）。
+        if (n.method.startsWith('item/') && t && n.params?.item?.type === 'agentMessage' && typeof n.params.item.text === 'string' && n.params.item.text !== '') {
+          t.lastMessage = n.params.item.text;
+        }
         break;
+      }
     }
   };
 
@@ -144,8 +145,15 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
     initialized = false;
   };
 
-  const startChild = async (): Promise<Result<void, Error>> => {
-    if (proc?.exitCode === null && proc?.stdin?.writable && initialized) return ok(undefined);
+  let starting: Promise<Result<void, Error>> | null = null;
+  // 并发 dispatchSync 复用同一次启动：二次 spawn 会 kill 掉先来者的子进程。
+  const startChild = (): Promise<Result<void, Error>> => {
+    if (proc?.exitCode === null && proc?.stdin?.writable && initialized) return Promise.resolve(ok(undefined));
+    if (starting === null) starting = startChildOnce().finally(() => { starting = null; });
+    return starting;
+  };
+
+  const startChildOnce = async (): Promise<Result<void, Error>> => {
     kill();
     const env: Record<string, string> = Object.fromEntries(
       Object.entries(deps.env ?? {}).filter((entry): entry is [string, string] => entry[1] !== undefined),
@@ -154,6 +162,14 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
       env['GLM_API_KEY'] = deps.apiKey; // codex 的 GLM provider 读这个
     }
     proc = spawn(deps.command[0] ?? '', deps.command.slice(1), { env, stdio: ['pipe', 'pipe', 'pipe'] });
+    // stderr 必须排干：>64KB 堆积会卡死子进程直到 30 分钟超时（路由到日志缝）。
+    // StringDecoder：chunk 边界劈开的多字节字符不出乱码（残余半字符随进程终结丢弃）。
+    const stderrDec = new StringDecoder('utf8');
+    proc.stderr?.on('data', (chunk: Buffer) => {
+      const text = stderrDec.write(chunk).trimEnd();
+      if (text !== '') deps.log(`[acp:stderr] ${text}`);
+    });
+    proc.stdin?.on('error', () => undefined); // EPIPE（子进程已退）不得炸宿主进程
     // spawn 本身失败（ENOENT 等）发的是 'error' 事件：不接则整进程崩。
     proc.on('error', (e) => {
       for (const p of pending.values()) {
@@ -200,9 +216,21 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
     return ok(undefined);
   };
 
-  const ensureThread = async (session: string, cwd: string): Promise<Result<AcptThread, Error>> => {
+  const threadStarting = new Map<string, Promise<Result<AcptThread, Error>>>();
+  // 同上：并发下同 session 的 thread/start 只发一次，先来者不被 map 覆盖
+  // （覆盖后其通知无人认领，waiter 挂到 30 分钟超时）。
+  const ensureThread = (session: string, cwd: string): Promise<Result<AcptThread, Error>> => {
     const existing = threads.get(session);
-    if (existing) return ok(existing);
+    if (existing) return Promise.resolve(ok(existing));
+    let p = threadStarting.get(session);
+    if (p === undefined) {
+      p = startThread(session, cwd).finally(() => threadStarting.delete(session));
+      threadStarting.set(session, p);
+    }
+    return p;
+  };
+
+  const startThread = async (session: string, cwd: string): Promise<Result<AcptThread, Error>> => {
     const params: Record<string, unknown> = { cwd };
     if (deps.model !== '') params['model'] = deps.model;
     const res = await call('thread/start', params, rpcTimeoutMs);
@@ -240,14 +268,20 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
       thread.pendingCompletion !== null
         ? Promise.resolve(thread.pendingCompletion)
         : new Promise<string>((resolve, reject) => {
-          thread.waiters.push(resolve);
-          setTimeout(() => {
-            const i = thread.waiters.indexOf(resolve);
+          let timer: NodeJS.Timeout;
+          // turn/completed 唤醒时必须清掉计时器——不然 30 分钟活句柄随回合累积。
+          const settled = (s: string): void => {
+            clearTimeout(timer);
+            resolve(s);
+          };
+          timer = setTimeout(() => {
+            const i = thread.waiters.indexOf(settled);
             if (i >= 0) {
               thread.waiters.splice(i, 1);
               reject(new Error(`acp: turn timeout after ${turnTimeoutMs}ms`));
             }
           }, turnTimeoutMs);
+          thread.waiters.push(settled);
         }),
       'acp: turn failed');
     thread.pendingCompletion = null;

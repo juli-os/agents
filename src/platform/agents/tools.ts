@@ -197,7 +197,8 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => {
       if (!res.ok) return res;
       const lines = res.value.split('\n');
       const total = lines.length;
-      const skip = num(a, 'offset', 0);
+      // 越界 offset 归位到 total：返回空页，而不是负 end 索引从数组尾错读。
+      const skip = Math.min(num(a, 'offset', 0), total);
       const take = num(a, 'lines', 200);
       const page = lines.slice(Math.max(0, total - skip - take), total - skip);
       return ok(JSON.stringify({ lines: page.join('\n'), total_lines: total, has_more: total - skip > take }));
@@ -326,7 +327,9 @@ const requireTmux2 = (deps: ToolsDeps): Result<TmuxClient, Error> =>
 
 const withinCwd = (cwd: string, p: string): string | null => {
   const abs = resolvePath(cwd, p);
-  return abs.startsWith(cwd) ? abs : null; // 越出工作区拒绝
+  const root = resolvePath(cwd);
+  // 分隔符感知：裸 startsWith 会把 /w/x-secret 当 /w/x 的子路径放行。
+  return abs === root || abs.startsWith(root + '/') ? abs : null; // 越出工作区拒绝
 };
 
 const fileTools = (deps: ToolsDeps): readonly Tool[] => [

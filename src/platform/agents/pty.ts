@@ -44,6 +44,7 @@ export const createPty = (
   child.stdout?.setEncoding('utf8');
   child.stdout?.on('data', onData);
   child.stderr?.on('data', onData); // 终端语义：stderr 也进 pane
+  child.stdin?.on('error', () => undefined); // EPIPE（子进程已退）不得炸宿主进程
   const exit = new Promise<number>((resolve) => {
     child.on('exit', (code) => resolve(code ?? 0));
     child.on('error', () => resolve(-1));

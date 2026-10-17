@@ -96,8 +96,11 @@ export const defaultHookSpecs = (hookJsPath: string, password = '', serviceUrl =
   // 里裸名本不出事，但 default-command 被定制或 hook 派生语境一变，Stop
   // 结算/五 hook 全灭——拼成绝对路径后不再依赖派生环境的 PATH。
   const session = `"$(${TMUX_BIN} display-message -p '#{session_name}')"`;
-  const envPrefix = password !== '' ? `JULI_PASSWORD=${JSON.stringify(password)} ` : '';
-  const urlPrefix = serviceUrl !== '' ? `JULI_SERVICE_URL=${JSON.stringify(serviceUrl)} ` : '';
+  // POSIX 单引号包裹（与 pty.ts 同款）：JSON.stringify 的双引号会让 hook
+  // 执行时被 shell 展开 $/反引号/$()——密码/URL 值当命令跑。
+  const shQuote = (v: string): string => `'${v.replace(/'/g, `'\\''`)}'`;
+  const envPrefix = password !== '' ? `JULI_PASSWORD=${shQuote(password)} ` : '';
+  const urlPrefix = serviceUrl !== '' ? `JULI_SERVICE_URL=${shQuote(serviceUrl)} ` : '';
   const run = (verb: string, extra = ''): string =>
     `${urlPrefix}${envPrefix}node ${JSON.stringify(hookJsPath)} ${verb} ${session}${extra}`;
   return [
