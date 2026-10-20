@@ -75,7 +75,8 @@ export interface TmuxSessionInfo {
 // sendText 的「paste + Enter」在 Claude 冷启动窗口（SessionStart 横幅/ink 重绘）
 // 里 Enter 会被吞：文本躺在输入框、ctx 0%、Stop hook 永远不来——静默挂死 10 分钟
 // 的实测形态。sendTextConfirmed 在发出后 280ms 级轮询验证「输入框已重置」，
-// 被吞只补 Enter（绝不重发文本，防双重粘贴），~4s 内确认或显性失败。
+// 被吞只补 Enter（绝不重发文本，防双重粘贴），~20s（submitConfirmMs 可调）
+// 内确认或显性失败。
 
 /** prompt 指纹对：首/末非空行各取前 40 字符——输入框判定锚（框内可见的是末行，
  * 提交后对话记录可见的是首行）。 */
@@ -97,8 +98,6 @@ export const inputBoxState = (pane: string, tail: string): 'cleared' | 'in-box' 
   const below = pane.slice(at).split('\n').slice(1);
   return below.some((l) => /^\s*❯\s*$/.test(l)) ? 'cleared' : 'in-box';
 };
-
-const sleepP = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 /** 提交确认的观测数据（测试器/CLI 的可见性面）：实际补了几次 Enter、
  * 是否触发过整段补粘贴、总耗时。 */

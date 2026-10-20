@@ -30,12 +30,10 @@ interface Notification {
 
 interface Pending {
   resolve: (r: { result?: unknown; error?: { code: number; message: string } }) => void;
-  timer: NodeJS.Timeout;
 }
 
 interface AcptThread {
   readonly threadId: string;
-  readonly cwd: string;
   turnId: string;
   lastMessage: string;
   lastError: string;
@@ -92,7 +90,6 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
           if (r.error) reject(new Error(`acp: rpc error ${r.error.code}: ${r.error.message}`));
           else resolve(r.result);
         },
-        timer,
       });
       void writeJson({ id, method, params }).catch((e) => {
         clearTimeout(timer);
@@ -238,7 +235,7 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
     const threadId = (res.value as { thread?: { id?: string } })?.thread?.id ?? '';
     if (threadId === '') return err(new Error('acp: thread/start: bad response'));
     const t: AcptThread = {
-      threadId, cwd, turnId: '', lastMessage: '', lastError: '', waiters: [],
+      threadId, turnId: '', lastMessage: '', lastError: '', waiters: [],
       pendingCompletion: null,
     };
     threads.set(session, t);

@@ -1,7 +1,8 @@
 // Claude Code hooks 注入（对应 Go internal/ai/agent/hook_config.go）：幂等
-// 注入五个 hook 到 ~/.claude/settings.json，事件命令携带 tmux 会话名——
+// 注入六个 hook 到 ~/.claude/settings.json，事件命令携带 tmux 会话名——
 // 干活中的 agent 任何 hook 事件都算僵尸心跳（"any notification counts"）。
-// 事件面：Stop=结算、SessionStart/Permission/UserPromptSubmit=心跳/活动。
+// 事件面：Stop=结算、SessionStart/PermissionRequest/UserPromptSubmit=心跳/活动、
+// Notification=提问卡单、PostToolUse=skill 追溯。
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -9,7 +10,7 @@ import { err, ok, type Result } from '../shared/result.ts';
 import { TMUX_BIN } from './tmux.ts';
 
 export interface HookSpec {
-  /** CC hook 事件名（Stop / SessionStart / PermissionRequest / UserPromptSubmit / PostToolUse）。 */
+  /** CC hook 事件名（Stop / SessionStart / PermissionRequest / UserPromptSubmit / Notification / PostToolUse）。 */
   readonly event: string;
   /** 工具名白名单（正则 include 过滤，官方机制）：省略=全量。PostToolUse
    * 钉 `^skill__` 只放 skill 工具调用进来——高频工具（Bash/Read/Edit）在
@@ -87,7 +88,7 @@ export const installClaudeHooks = (
   }
 };
 
-/** 标准五 hook 命令组（tmux 会话名内嵌进命令行——CC 的 stdin 里没有它）。
+/** 标准六 hook 命令组（tmux 会话名内嵌进命令行——CC 的 stdin 里没有它）。
  * 服务端 /api/* 全量 Bearer 认证，而 claude 派生的 hook 进程没有 JULI_PASSWORD
  * 环境——密码必须内嵌进命令行，否则 Stop 结算永远 401。 */
 export const defaultHookSpecs = (hookJsPath: string, password = '', serviceUrl = ''): readonly HookSpec[] => {

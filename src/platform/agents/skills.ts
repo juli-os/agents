@@ -3,7 +3,7 @@
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { ok, toResult, type Result } from '../shared/result.ts';
+import { ok, type Result } from '../shared/result.ts';
 
 export interface Skill {
   readonly name: string;
@@ -64,11 +64,13 @@ export const createSkillRegistry = (dir: string): SkillRegistry => {
   const skills = loadSkills(dir);
   let active: Skill | null = null;
   let activeArgs: readonly string[] = [];
+  const find = (name: string): Skill | null =>
+    skills.find((x) => x.name === name) ?? null;
   return {
     all: skills,
-    find(name) { return skills.find((x) => x.name === name) ?? null; },
+    find,
     activate(name, args) {
-      const s = skills.find((x) => x.name === name);
+      const s = find(name);
       if (!s) return { ok: false, error: new Error(`unknown skill "${name}"（可用: ${skills.map((x) => x.name).join(', ') || '无'}）`) };
       active = s;
       activeArgs = args;

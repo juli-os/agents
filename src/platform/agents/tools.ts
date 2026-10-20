@@ -5,7 +5,7 @@
 import { execFile } from 'node:child_process';
 import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
 import { join, resolve as resolvePath } from 'node:path';
-import { ok, toResult, type Result } from '../shared/result.ts';
+import { ok, err, toResult, type Result } from '../shared/result.ts';
 import type { ToolSchema } from '../../contracts/ports.ts';
 import type { TmuxClient } from './tmux.ts';
 import { probePane } from './pane_probe.ts';
@@ -82,11 +82,14 @@ export interface ToolsDeps {
   readonly onSwitch?: (session: string) => void;
 }
 
-const str = (args: Record<string, unknown>, k: string): string =>
-  typeof args[k] === 'string' ? (args[k] as string) : '';
-const num = (args: Record<string, unknown>, k: string, fallback: number): number =>
-  typeof args[k] === 'number' ? (args[k] as number) : fallback;
-const bool = (args: Record<string, unknown>, k: string): boolean => args[k] === true;
+const str = (args: Record<string, unknown>, k: string): string => {
+  const v = args[k];
+  return typeof v === 'string' ? v : '';
+};
+const num = (args: Record<string, unknown>, k: string, fallback: number): number => {
+  const v = args[k];
+  return typeof v === 'number' ? v : fallback;
+};
 
 const tool = (
   name: string, description: string,
@@ -108,183 +111,181 @@ export const toolSchemas = (tools: readonly Tool[]): ToolSchema[] =>
 
 // ---- tmux 会话类工具 -------------------------------------------------------------
 
-const sessionTools = (deps: ToolsDeps): readonly Tool[] => {
-  const tc = deps.tmux;
-  const requireTmux = (): Result<TmuxClient, Error> =>
-    tc ? ok(tc) : { ok: false, error: new Error('tmux not available') };
-  return [
-    tool('list_sessions', 'List live tmux agent sessions with their working/idle state.', [], async () => {
-      const r = requireTmux();
-      if (!r.ok) return r;
-      return ok(JSON.stringify(await r.value.listSessions()));
-    }),
-    tool('create_session', 'Create a new detached tmux session for an agent.', [
-      { name: 'name', type: 'string', description: 'Session name', required: true },
-      { name: 'cwd', type: 'string', description: 'Working directory (optional)', required: false },
-    ], async (a) => {
-      const r = requireTmux();
-      if (!r.ok) return r;
-      return (await r.value.newSession(str(a, 'name'), str(a, 'cwd') || undefined)).ok
-        ? ok(`session ${str(a, 'name')} created`)
-        : toResult(Promise.reject(new Error('create failed')));
-    }),
-    tool('agent_alive', 'Check whether an agent session still exists.', [
-      { name: 'name', type: 'string', description: 'Session name', required: true },
-    ], async (a) => {
-      const r = requireTmux();
-      if (!r.ok) return r;
-      return ok(JSON.stringify({ alive: await r.value.hasSession(str(a, 'name')) }));
-    }),
-    tool('send_to_session', 'Send a command or message to a tmux session. Only works when a coding agent is alive; a bare shell is auto-recovered from the snapshot first. Destructive shell commands are blocked. Follow with wait_until_idle to handle any confirmation prompts.', [
-      { name: 'name', type: 'string', description: 'Session name', required: true },
-      { name: 'message', type: 'string', description: 'Text to send to the session', required: true },
-    ], async (a) => {
-      const r = requireTmux();
-      if (!r.ok) return r;
-      const name = str(a, 'name');
-      const message = str(a, 'message');
-      // 门 0：内容安全策略。
-      const blocked = isBlockedCommand(message);
-      if (blocked !== null) {
-        return toResult(Promise.reject(new Error(`command blocked by safety policy: matched pattern "${blocked}"`)));
+const requireTmux = (deps: ToolsDeps): Result<TmuxClient, Error> =>
+  deps.tmux ? ok(deps.tmux) : { ok: false, error: new Error('tmux not available') };
+
+const sessionTools = (deps: ToolsDeps): readonly Tool[] => [
+  tool('list_sessions', 'List live tmux agent sessions with their working/idle state.', [], async () => {
+    const r = requireTmux(deps);
+    if (!r.ok) return r;
+    return ok(JSON.stringify(await r.value.listSessions()));
+  }),
+  tool('create_session', 'Create a new detached tmux session for an agent.', [
+    { name: 'name', type: 'string', description: 'Session name', required: true },
+    { name: 'cwd', type: 'string', description: 'Working directory (optional)', required: false },
+  ], async (a) => {
+    const r = requireTmux(deps);
+    if (!r.ok) return r;
+    return (await r.value.newSession(str(a, 'name'), str(a, 'cwd') || undefined)).ok
+      ? ok(`session ${str(a, 'name')} created`)
+      : err(new Error('create failed'));
+  }),
+  tool('agent_alive', 'Check whether an agent session still exists.', [
+    { name: 'name', type: 'string', description: 'Session name', required: true },
+  ], async (a) => {
+    const r = requireTmux(deps);
+    if (!r.ok) return r;
+    return ok(JSON.stringify({ alive: await r.value.hasSession(str(a, 'name')) }));
+  }),
+  tool('send_to_session', 'Send a command or message to a tmux session. Only works when a coding agent is alive; a bare shell is auto-recovered from the snapshot first. Destructive shell commands are blocked. Follow with wait_until_idle to handle any confirmation prompts.', [
+    { name: 'name', type: 'string', description: 'Session name', required: true },
+    { name: 'message', type: 'string', description: 'Text to send to the session', required: true },
+  ], async (a) => {
+    const r = requireTmux(deps);
+    if (!r.ok) return r;
+    const name = str(a, 'name');
+    const message = str(a, 'message');
+    // 门 0：内容安全策略。
+    const blocked = isBlockedCommand(message);
+    if (blocked !== null) {
+      return err(new Error(`command blocked by safety policy: matched pattern "${blocked}"`));
+    }
+    if (!(await r.value.hasSession(name))) {
+      return err(new Error(`session ${name} not found`));
+    }
+    // 门 1：pane 交互状态。选择菜单绝不盲发——守护者评估后才能动。
+    const probe = await probePane(r.value, name);
+    if (probe.liveSelection) {
+      if (!deps.assessor) {
+        return err(new Error('selection menu visible — guardian assessor not configured, send refused'));
       }
-      if (!(await r.value.hasSession(name))) {
-        return toResult(Promise.reject(new Error(`session ${name} not found`)));
-      }
-      // 门 1：pane 交互状态。选择菜单绝不盲发——守护者评估后才能动。
-      const probe = await probePane(r.value, name);
-      if (probe.liveSelection) {
-        if (!deps.assessor) {
-          return toResult(Promise.reject(new Error('selection menu visible — guardian assessor not configured, send refused')));
-        }
-        const cap = await r.value.capturePane(name, 30);
-        if (!cap.ok) return cap;
-        const verdict = await deps.assessor.assess(name, cap.value);
-        if (!verdict.ok) return verdict;
-        if (verdict.value.decision === 'reject') {
-          return toResult(Promise.reject(new Error(`guardian rejected: ${verdict.value.reason}`)));
-        }
-        if (verdict.value.decision === 'approve') {
-          // 确认后清菜单：回一个「1」，再继续原消息。
-          await r.value.sendText(name, '1');
-          await new Promise((res2) => setTimeout(res2, 800));
-        } else {
-          return toResult(Promise.reject(new Error(`guardian undecided (${verdict.value.reason}) — send refused`)));
-        }
-      }
-      // 门 2：裸 shell → 快照自愈重启 agent。
-      const fresh = await probePane(r.value, name);
-      if (fresh.foregroundIsShell) {
-        if (!deps.healer) {
-          return toResult(Promise.reject(new Error(`bare shell, no coding agent running (${name})`)));
-        }
-        if (!(await deps.healer.healSession(name))) {
-          return toResult(Promise.reject(new Error(`auto-recover session "${name}" failed`)));
-        }
-      }
-      return (await r.value.sendText(name, message)).ok
-        ? ok('sent')
-        : toResult(Promise.reject(new Error('send failed')));
-    }),
-    tool('read_session_output', 'Read output from a tmux session with paging support (lines/offset).', [
-      { name: 'name', type: 'string', description: 'Session name', required: true },
-      { name: 'lines', type: 'number', description: 'Lines to read per page (default 200)', required: false },
-      { name: 'offset', type: 'number', description: 'Skip this many lines from the end (default 0)', required: false },
-    ], async (a) => {
-      const r = requireTmux();
-      if (!r.ok) return r;
-      const res = await r.value.capturePane(str(a, 'name'), 5000);
-      if (!res.ok) return res;
-      const lines = res.value.split('\n');
-      const total = lines.length;
-      // 越界 offset 归位到 total：返回空页，而不是负 end 索引从数组尾错读。
-      const skip = Math.min(num(a, 'offset', 0), total);
-      const take = num(a, 'lines', 200);
-      const page = lines.slice(Math.max(0, total - skip - take), total - skip);
-      return ok(JSON.stringify({ lines: page.join('\n'), total_lines: total, has_more: total - skip > take }));
-    }),
-    tool('read_structured_output', "Read the session's last structured JSON output block.", [
-      { name: 'name', type: 'string', description: 'Session name', required: true },
-    ], async (a) => {
-      const r = requireTmux();
-      if (!r.ok) return r;
-      const res = await r.value.capturePane(str(a, 'name'), 3000);
-      if (!res.ok) return res;
-      const m = /```json\n([\s\S]*?)```/.exec(res.value) ?? /\{[\s\S]*\}/.exec(res.value);
-      return m ? ok(m[1] ?? m[0]) : toResult(Promise.reject(new Error('no structured output found')));
-    }),
-    tool('relay_message', 'Relay a message from one agent session to another (read source output first, then send a condensed brief).', [
-      { name: 'from', type: 'string', description: 'Source session', required: true },
-      { name: 'to', type: 'string', description: 'Target session', required: true },
-      { name: 'brief', type: 'string', description: 'Condensed message to relay', required: true },
-    ], async (a) => {
-      const r = requireTmux();
-      if (!r.ok) return r;
-      return (await r.value.sendText(str(a, 'to'), `[来自 ${str(a, 'from')} 的消息] ${str(a, 'brief')}`)).ok
-        ? ok('relayed')
-        : toResult(Promise.reject(new Error('relay failed')));
-    }),
-    tool('wait_until_idle', 'Wait for a session agent to finish, then return its output. Combines waiting and reading.', [
-      { name: 'session_name', type: 'string', description: 'Session name to poll', required: true },
-      { name: 'timeout_seconds', type: 'number', description: 'Max wait time in seconds (default 300)', required: false },
-    ], async (a) => {
-      const r = requireTmux();
-      if (!r.ok) return r;
-      const session = str(a, 'session_name');
-      const timeoutMs = num(a, 'timeout_seconds', 300) * 1000;
-      const notifier = deps.notifier;
-      if (notifier) {
-        const after = notifier.snapshot(session);
-        const wait = notifier.waitAfter(session, after);
-        const timer = new Promise<'timeout'>((res) => setTimeout(() => res('timeout'), timeoutMs));
-        const result = await Promise.race([wait.then(() => 'idle' as const), timer]);
-        wait.cancel();
-        if (result === 'timeout') return toResult(Promise.reject(new Error(`wait timeout after ${timeoutMs}ms`)));
-      } else {
-        // 无通知器（部署简化态）：等待期满后直接返回当前输出。
-        await new Promise((r2) => setTimeout(r2, Math.min(timeoutMs, 5000)));
-      }
-      const res = await r.value.capturePane(session, 400);
-      return res.ok ? ok(res.value.slice(-4000)) : res;
-    }),
-    tool('save_context', "Capture a session's full pane output into a context file under the workspace.", [
-      { name: 'name', type: 'string', description: 'Session name', required: true },
-      { name: 'file', type: 'string', description: 'Context file name (under .contexts/)', required: true },
-    ], async (a) => {
-      const r = requireTmux();
-      if (!r.ok) return r;
-      const cap = await r.value.capturePane(str(a, 'name'), 5000);
+      const cap = await r.value.capturePane(name, 30);
       if (!cap.ok) return cap;
-      const dir = join(deps.cwd, '.contexts');
-      await mkdir(dir, { recursive: true });
-      await writeFile(join(dir, str(a, 'file')), cap.value, 'utf8');
-      return ok(`saved ${cap.value.length} chars to .contexts/${str(a, 'file')}`);
-    }),
-    tool('restore_context', 'Send a saved context file back into a session (summary briefing).', [
-      { name: 'name', type: 'string', description: 'Session name', required: true },
-      { name: 'file', type: 'string', description: 'Context file name (under .contexts/)', required: true },
-    ], async (a) => {
-      const r = requireTmux();
-      if (!r.ok) return r;
-      const res = await toResult(readFile(join(deps.cwd, '.contexts', str(a, 'file')), 'utf8'), 'context file not found');
-      if (!res.ok) return res;
-      const brief = `以下是此前会话的上下文存档，请据此继续：\n\n${res.value.slice(-6000)}`;
-      return (await r.value.sendText(str(a, 'name'), brief)).ok
-        ? ok('context restored')
-        : toResult(Promise.reject(new Error('restore failed')));
-    }),
-    tool('switch_session', 'Mark a session as the active working target for this orchestrator.', [
-      { name: 'name', type: 'string', description: 'Session name', required: true },
-    ], async (a) => {
-      const r = requireTmux();
-      if (!r.ok) return r;
-      const name = str(a, 'name');
-      if (!(await r.value.hasSession(name))) return toResult(Promise.reject(new Error(`session ${name} not found`)));
-      deps.onSwitch?.(name);
-      return ok(`switched to ${name}`);
-    }),
-  ];
-};
+      const verdict = await deps.assessor.assess(name, cap.value);
+      if (!verdict.ok) return verdict;
+      if (verdict.value.decision === 'reject') {
+        return err(new Error(`guardian rejected: ${verdict.value.reason}`));
+      }
+      if (verdict.value.decision === 'approve') {
+        // 确认后清菜单：回一个「1」，再继续原消息。
+        await r.value.sendText(name, '1');
+        await new Promise((res2) => setTimeout(res2, 800));
+      } else {
+        return err(new Error(`guardian undecided (${verdict.value.reason}) — send refused`));
+      }
+    }
+    // 门 2：裸 shell → 快照自愈重启 agent。
+    const fresh = await probePane(r.value, name);
+    if (fresh.foregroundIsShell) {
+      if (!deps.healer) {
+        return err(new Error(`bare shell, no coding agent running (${name})`));
+      }
+      if (!(await deps.healer.healSession(name))) {
+        return err(new Error(`auto-recover session "${name}" failed`));
+      }
+    }
+    return (await r.value.sendText(name, message)).ok
+      ? ok('sent')
+      : err(new Error('send failed'));
+  }),
+  tool('read_session_output', 'Read output from a tmux session with paging support (lines/offset).', [
+    { name: 'name', type: 'string', description: 'Session name', required: true },
+    { name: 'lines', type: 'number', description: 'Lines to read per page (default 200)', required: false },
+    { name: 'offset', type: 'number', description: 'Skip this many lines from the end (default 0)', required: false },
+  ], async (a) => {
+    const r = requireTmux(deps);
+    if (!r.ok) return r;
+    const res = await r.value.capturePane(str(a, 'name'), 5000);
+    if (!res.ok) return res;
+    const lines = res.value.split('\n');
+    const total = lines.length;
+    // 越界 offset 归位到 total：返回空页，而不是负 end 索引从数组尾错读。
+    const skip = Math.min(num(a, 'offset', 0), total);
+    const take = num(a, 'lines', 200);
+    const page = lines.slice(Math.max(0, total - skip - take), total - skip);
+    return ok(JSON.stringify({ lines: page.join('\n'), total_lines: total, has_more: total - skip > take }));
+  }),
+  tool('read_structured_output', "Read the session's last structured JSON output block.", [
+    { name: 'name', type: 'string', description: 'Session name', required: true },
+  ], async (a) => {
+    const r = requireTmux(deps);
+    if (!r.ok) return r;
+    const res = await r.value.capturePane(str(a, 'name'), 3000);
+    if (!res.ok) return res;
+    const m = /```json\n([\s\S]*?)```/.exec(res.value) ?? /\{[\s\S]*\}/.exec(res.value);
+    return m ? ok(m[1] ?? m[0]) : err(new Error('no structured output found'));
+  }),
+  tool('relay_message', 'Relay a message from one agent session to another (read source output first, then send a condensed brief).', [
+    { name: 'from', type: 'string', description: 'Source session', required: true },
+    { name: 'to', type: 'string', description: 'Target session', required: true },
+    { name: 'brief', type: 'string', description: 'Condensed message to relay', required: true },
+  ], async (a) => {
+    const r = requireTmux(deps);
+    if (!r.ok) return r;
+    return (await r.value.sendText(str(a, 'to'), `[来自 ${str(a, 'from')} 的消息] ${str(a, 'brief')}`)).ok
+      ? ok('relayed')
+      : err(new Error('relay failed'));
+  }),
+  tool('wait_until_idle', 'Wait for a session agent to finish, then return its output. Combines waiting and reading.', [
+    { name: 'session_name', type: 'string', description: 'Session name to poll', required: true },
+    { name: 'timeout_seconds', type: 'number', description: 'Max wait time in seconds (default 300)', required: false },
+  ], async (a) => {
+    const r = requireTmux(deps);
+    if (!r.ok) return r;
+    const session = str(a, 'session_name');
+    const timeoutMs = num(a, 'timeout_seconds', 300) * 1000;
+    const notifier = deps.notifier;
+    if (notifier) {
+      const after = notifier.snapshot(session);
+      const wait = notifier.waitAfter(session, after);
+      const timer = new Promise<'timeout'>((res) => setTimeout(() => res('timeout'), timeoutMs));
+      const result = await Promise.race([wait.then(() => 'idle' as const), timer]);
+      wait.cancel();
+      if (result === 'timeout') return err(new Error(`wait timeout after ${timeoutMs}ms`));
+    } else {
+      // 无通知器（部署简化态）：等待期满后直接返回当前输出。
+      await new Promise((r2) => setTimeout(r2, Math.min(timeoutMs, 5000)));
+    }
+    const res = await r.value.capturePane(session, 400);
+    return res.ok ? ok(res.value.slice(-4000)) : res;
+  }),
+  tool('save_context', "Capture a session's full pane output into a context file under the workspace.", [
+    { name: 'name', type: 'string', description: 'Session name', required: true },
+    { name: 'file', type: 'string', description: 'Context file name (under .contexts/)', required: true },
+  ], async (a) => {
+    const r = requireTmux(deps);
+    if (!r.ok) return r;
+    const cap = await r.value.capturePane(str(a, 'name'), 5000);
+    if (!cap.ok) return cap;
+    const dir = join(deps.cwd, '.contexts');
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, str(a, 'file')), cap.value, 'utf8');
+    return ok(`saved ${cap.value.length} chars to .contexts/${str(a, 'file')}`);
+  }),
+  tool('restore_context', 'Send a saved context file back into a session (summary briefing).', [
+    { name: 'name', type: 'string', description: 'Session name', required: true },
+    { name: 'file', type: 'string', description: 'Context file name (under .contexts/)', required: true },
+  ], async (a) => {
+    const r = requireTmux(deps);
+    if (!r.ok) return r;
+    const res = await toResult(readFile(join(deps.cwd, '.contexts', str(a, 'file')), 'utf8'), 'context file not found');
+    if (!res.ok) return res;
+    const brief = `以下是此前会话的上下文存档，请据此继续：\n\n${res.value.slice(-6000)}`;
+    return (await r.value.sendText(str(a, 'name'), brief)).ok
+      ? ok('context restored')
+      : err(new Error('restore failed'));
+  }),
+  tool('switch_session', 'Mark a session as the active working target for this orchestrator.', [
+    { name: 'name', type: 'string', description: 'Session name', required: true },
+  ], async (a) => {
+    const r = requireTmux(deps);
+    if (!r.ok) return r;
+    const name = str(a, 'name');
+    if (!(await r.value.hasSession(name))) return err(new Error(`session ${name} not found`));
+    deps.onSwitch?.(name);
+    return ok(`switched to ${name}`);
+  }),
+];
 
 // ---- 守护者 / 确认类工具 -----------------------------------------------------------
 
@@ -292,7 +293,7 @@ const confirmationTools = (deps: ToolsDeps): readonly Tool[] => [
   tool('probe_pane', 'Probe a tmux pane for its interactive state (agent alive? trust dialog? selection menu? ready for a task?). Deterministic, no LLM.', [
     { name: 'name', type: 'string', description: 'Session name', required: true },
   ], async (a) => {
-    const r = requireTmux2(deps);
+    const r = requireTmux(deps);
     if (!r.ok) return r;
     const probe = await probePane(r.value, str(a, 'name'));
     return ok(JSON.stringify(probe));
@@ -300,8 +301,8 @@ const confirmationTools = (deps: ToolsDeps): readonly Tool[] => [
   tool('assess_confirmation', 'Have the guardian evaluate a session for a pending confirmation prompt (approve/reject/idle/unknown).', [
     { name: 'session_name', type: 'string', description: 'Session name', required: true },
   ], async (a) => {
-    if (!deps.assessor) return toResult(Promise.reject(new Error('guardian assessor not configured')));
-    const r = requireTmux2(deps);
+    if (!deps.assessor) return err(new Error('guardian assessor not configured'));
+    const r = requireTmux(deps);
     if (!r.ok) return r;
     const cap = await r.value.capturePane(str(a, 'session_name'), 200);
     if (!cap.ok) return cap;
@@ -313,15 +314,13 @@ const confirmationTools = (deps: ToolsDeps): readonly Tool[] => [
     { name: 'name', type: 'string', description: 'Session name', required: true },
     { name: 'response', type: 'string', description: 'Response text to send', required: true },
   ], async (a) => {
-    const r = requireTmux2(deps);
+    const r = requireTmux(deps);
     if (!r.ok) return r;
     return (await r.value.sendText(str(a, 'name'), str(a, 'response'))).ok
       ? ok('response sent')
-      : toResult(Promise.reject(new Error('send failed')));
-  }),
-];
-const requireTmux2 = (deps: ToolsDeps): Result<TmuxClient, Error> =>
-  deps.tmux ? ok(deps.tmux) : { ok: false, error: new Error('tmux not available') };
+      : err(new Error('send failed'));
+    }),
+  ];
 
 // ---- 文件 / 状态类工具 -------------------------------------------------------------
 
@@ -337,7 +336,7 @@ const fileTools = (deps: ToolsDeps): readonly Tool[] => [
     { name: 'path', type: 'string', description: 'Relative path', required: true },
   ], async (a) => {
     const abs = withinCwd(deps.cwd, str(a, 'path'));
-    if (!abs) return toResult(Promise.reject(new Error('path escapes workspace')));
+    if (!abs) return err(new Error('path escapes workspace'));
     return toResult(readFile(abs, 'utf8'), 'read failed');
   }),
   tool('write_file', 'Write a text file inside the workspace (parent dirs auto-created).', [
@@ -345,7 +344,7 @@ const fileTools = (deps: ToolsDeps): readonly Tool[] => [
     { name: 'content', type: 'string', description: 'File content', required: true },
   ], async (a) => {
     const abs = withinCwd(deps.cwd, str(a, 'path'));
-    if (!abs) return toResult(Promise.reject(new Error('path escapes workspace')));
+    if (!abs) return err(new Error('path escapes workspace'));
     await mkdir(abs.replace(/[/\\][^/\\]*$/, ''), { recursive: true });
     await writeFile(abs, str(a, 'content'), 'utf8');
     return ok(`wrote ${str(a, 'path')}`);
@@ -354,7 +353,7 @@ const fileTools = (deps: ToolsDeps): readonly Tool[] => [
     { name: 'path', type: 'string', description: 'Relative path (default .)', required: false },
   ], async (a) => {
     const abs = withinCwd(deps.cwd, str(a, 'path') || '.');
-    if (!abs) return toResult(Promise.reject(new Error('path escapes workspace')));
+    if (!abs) return err(new Error('path escapes workspace'));
     return toResult(readdir(abs).then((names) => names.join('\n')), 'list failed');
   }),
   tool('run_command', 'Run a short read-only command inside the workspace (git status, ls ...).', [

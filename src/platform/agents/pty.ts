@@ -62,13 +62,6 @@ export const createPty = (
   };
 };
 
-/** attach 一个 tmux 会话，返回 PTY 会话。
- *
- * 2026-09-20 agent-a 幽灵会话事故：此处曾「不存在则先建」——任意名字的
- * 终端 attach（旧 run 的 @会话芯片、手输名）都会静默 new-session（无 cwd
- * →引擎进程 cwd），用户视角=凭空冒出陌生 Profile。创建是显式动作（与复用
- * 优先路由同裁决）：不存在 → 明确报错；要重建立走 POST /api/sessions 或
- * 引擎派发（绑定会话自带 cwd）。 */
 /** attach 命令拼装（纯函数可测）：专属 socket（tmux_socket_path）必须随行——
  * 引擎 server 与 default socket 分家后，裸 `tmux attach` 会 attach 到错误的
  * server（2026-09-28 专属 socket 切换配套）。首元素必须是 tmux 二进制——
@@ -81,6 +74,13 @@ export const tmuxAttachCommand = (
   bin: string = TMUX_BIN,
 ): readonly string[] => [bin, ...(socketPath ? ['-S', socketPath] : []), 'attach', '-t', session];
 
+/** attach 一个 tmux 会话，返回 PTY 会话。
+ *
+ * 2026-09-20 agent-a 幽灵会话事故：此处曾「不存在则先建」——任意名字的
+ * 终端 attach（旧 run 的 @会话芯片、手输名）都会静默 new-session（无 cwd
+ * →引擎进程 cwd），用户视角=凭空冒出陌生 Profile。创建是显式动作（与复用
+ * 优先路由同裁决）：不存在 → 明确报错；要重建立走 POST /api/sessions 或
+ * 引擎派发（绑定会话自带 cwd）。 */
 export const attachTmuxPty = async (
   tmux: { hasSession(name: string): Promise<boolean>; readonly socketPath?: string },
   session: string,

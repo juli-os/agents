@@ -161,8 +161,8 @@ export const createVoiceCall = (mode: CallMode, deps: VoiceCallDeps): VoiceCall 
       // 已提议阶段：先解读确认意图——明确确认即派发（不经编排器回合）；
       // 其余视为修订/继续讨论，丢弃暂存计划重新来。
       if (staged !== null) {
-        if (isConfirmPhrase(text.trim().toLowerCase())) {
-          const confirm = await (this as VoiceCall).confirmPlan();
+        if (isConfirmPhrase(text)) {
+          const confirm = await this.confirmPlan();
           events.push(...confirm.events);
           return { events, reply: confirm.events.at(-1)?.data ?? '' };
         }
@@ -216,10 +216,11 @@ export const createVoiceCall = (mode: CallMode, deps: VoiceCallDeps): VoiceCall 
 };
 
 /** 语音回合的派发门：通话激活时拦截派发类工具（编排器 hooks 的铁腕位）。 */
+type GatePayload = { type: string; tool?: string; block?: boolean; blockReason?: string };
 export const voiceGateHook = (
   callActive: () => boolean,
   mode: () => CallMode,
-): ((p: { type: string; tool?: string; block?: boolean; blockReason?: string }) => { type: string; tool?: string; block?: boolean; blockReason?: string }) => (p) => {
+): ((p: GatePayload) => GatePayload) => (p) => {
   if (p.type !== 'before_tool_call' || !callActive()) return p;
   if (mode() === 'chat' || VOICE_BLOCKED_TOOLS.has(p.tool ?? '')) {
     return { ...p, block: true, blockReason: '语音通话中：派发类工具被拦截（落实请走确认流程）' };

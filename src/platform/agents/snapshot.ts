@@ -3,7 +3,6 @@
 // 也保留最后已知态，恢复时按快照重建。原子写；恢复面供 SnapshotHealer。
 
 import { readFileSync, writeFileSync, existsSync, renameSync } from 'node:fs';
-import { join } from 'node:path';
 import { ok, type Result } from '../shared/result.ts';
 import type { TmuxClient } from './tmux.ts';
 
@@ -68,8 +67,8 @@ export const takeSnapshot = async (deps: SnapshotDeps): Promise<Result<Snapshot,
   const seen = new Set<string>();
   for (const name of listed) {
     seen.add(name);
-    const workDir = await paneWorkDir(deps.tmux, name);
-    const cmd = await paneCommand(deps.tmux, name);
+    const workDir = await paneField(deps.tmux, name, '#{pane_current_path}');
+    const cmd = await paneField(deps.tmux, name, '#{pane_current_command}');
     const prevS = prevByName.get(name);
     const agentNow = hadAgentOf(cmd);
     sessions.push({
@@ -90,12 +89,9 @@ export const takeSnapshot = async (deps: SnapshotDeps): Promise<Result<Snapshot,
   return ok(snap);
 };
 
-const paneWorkDir = async (tmux: TmuxClient, session: string): Promise<string> => {
-  const res = await tmux.exec(['display-message', '-p', '-t', session, '#{pane_current_path}']);
-  return res.ok ? res.value.trim() : '';
-};
-const paneCommand = async (tmux: TmuxClient, session: string): Promise<string> => {
-  const res = await tmux.exec(['display-message', '-p', '-t', session, '#{pane_current_command}']);
+/** 按 display-message 模板取单 pane 字段（工作区/命令共用），失败回空串。 */
+const paneField = async (tmux: TmuxClient, session: string, format: string): Promise<string> => {
+  const res = await tmux.exec(['display-message', '-p', '-t', session, format]);
   return res.ok ? res.value.trim() : '';
 };
 

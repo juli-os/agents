@@ -13,7 +13,7 @@ import { realpathSync } from 'node:fs';
 import type { TmuxClient } from './tmux.ts';
 import { probePane } from './pane_probe.ts';
 import { err, ok, type Result } from '../shared/result.ts';
-import { decideContextAction } from './contextGate.ts';
+import { decideContextAction, type ContextGateState } from './contextGate.ts';
 
 export interface ProvisioningOpts {
   readonly tmux: TmuxClient;
@@ -61,7 +61,7 @@ export const createProvisioningDispatch = (opts: ProvisioningOpts) => {
   // contextGate.ts（可单测）。斜杠命令发完等 REPL 再回就绪（compact 耗时
   // 轮询上限 120s）；失败降级为直接发任务（context 管理不阻塞派发）。
   const gate = opts.contextGate;
-  const gateState = new Map<string, { wf: string; lastInputTokens: number; compactAt?: number }>();
+  const gateState = new Map<string, ContextGateState>();
   const runGate = async (session: string): Promise<void> => {
     if (!gate) return;
     try {

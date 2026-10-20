@@ -25,10 +25,17 @@ export interface ToolCallRequest {
   readonly signal?: AbortSignal;
 }
 
+/** assistant 发起的一次工具调用：ChatResult 产出与 ChatMessage 历史回填共用同一形状。 */
+interface ToolCall {
+  readonly id: string;
+  readonly name: string;
+  readonly arguments: string;
+}
+
 export interface ChatMessage {
   readonly role: 'user' | 'assistant' | 'tool' | 'system';
   readonly content: string;
-  readonly toolCalls?: readonly { readonly id: string; readonly name: string; readonly arguments: string }[];
+  readonly toolCalls?: readonly ToolCall[];
   /** role=tool 时：上一轮 assistant toolCalls 的结果。 */
   readonly toolResults?: readonly { readonly id: string; readonly name: string; readonly content: string; readonly isError?: boolean }[];
   readonly system?: string;
@@ -38,7 +45,7 @@ export interface ChatResult {
   readonly content: string;
   readonly thinking?: string;
   readonly stopReason?: string;
-  readonly toolCalls: readonly { readonly id: string; readonly name: string; readonly arguments: string }[];
+  readonly toolCalls: readonly ToolCall[];
 }
 
 /** 聊天 LLM 端口：编排器/语音理解只认此形状，实现由宿主注入。 */

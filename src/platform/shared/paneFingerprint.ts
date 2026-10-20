@@ -26,9 +26,9 @@ export const parsePaneQuestion = (pane: string, fallbackMessage = ''): PaneQuest
   for (const raw of pane.split('\n')) {
     const m = /^\s*[❯>\s]*(\d)\.\s+(.{1,90})$/.exec(raw);
     if (m !== null) {
-      const num = m[1] ?? '';
+      const num = m[1] ?? ''; // (\d) 为必选捕获组，匹配成功时必有值
       const label = (m[2] ?? '').trim();
-      if (num !== '' && !seen.has(num)) {
+      if (!seen.has(num)) {
         seen.add(num);
         opts.push({ label: `${num}. ${label}`, reply: num });
       }

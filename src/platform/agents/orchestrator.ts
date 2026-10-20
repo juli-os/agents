@@ -2,7 +2,7 @@
 // slash 命令分流 → tool-calling 循环（hooks 前后拦截、上下文裁剪、空回复
 // 唤醒重试）→ 事件流回调。函数式工厂 + 不可变快照消息历史。
 
-import { ok, toResult, type Result } from '../shared/result.ts';
+import { err, ok, toResult, type Result } from '../shared/result.ts';
 import { truncate, type JsonRecord } from '../shared/json.ts';
 import type { Clock } from '../shared/clock.ts';
 import type { ChatLlmPort, ChatMessage, ToolCallRequest } from '../../contracts/ports.ts';
@@ -161,16 +161,15 @@ export const createSessionAssessor = (
     if (!m) return { ok: false, error: new Error('assessor: no json in response') };
     try {
       const v = JSON.parse(m[0]) as { decision?: string; reason?: string };
-      const decision = (['approve', 'reject', 'idle', 'unknown'] as const).includes(
-        (v.decision ?? 'unknown') as Assessment['decision'],
-      ) ? (v.decision as Assessment['decision']) : 'unknown';
+      const raw = v.decision ?? 'unknown';
+      const decision: Assessment['decision'] =
+        raw === 'approve' || raw === 'reject' || raw === 'idle' || raw === 'unknown' ? raw : 'unknown';
       return ok({ decision, reason: v.reason ?? '' });
     } catch (e) {
       return { ok: false, error: new Error(`assessor: ${String(e)}`) };
     }
   },
 });
-
 
 // ---- 编排器 --------------------------------------------------------------------------
 
@@ -232,9 +231,9 @@ export const createOrchestrator = (deps: OrchestratorDeps): Orchestrator => {
       return { id: tc.id, name: tc.name, content: before.blockReason ?? 'blocked by hook', isError: true };
     }
     const tool = deps.tools.find((t) => t.name === tc.name);
-    const result = tool
+    const result: Result<string, Error> = tool
       ? await tool.execute(parsed)
-      : ({ ok: false, error: new Error(`unknown tool ${tc.name}`) } as Result<string, Error>);
+      : err(new Error(`unknown tool ${tc.name}`));
     let content = result.ok ? result.value : `error: ${result.error.message}`;
     const after = await hooks.fire({ type: 'after_tool_call', tool: tc.name, result: content });
     if (after.modifiedResult !== undefined) content = after.modifiedResult;
