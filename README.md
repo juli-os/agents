@@ -15,8 +15,8 @@ and nothing it doesn't — zero npm dependencies, Node built-ins only.
   pane probes to tell "awaiting input" from "still working"
 - **Self-healing** — snapshot/recover loop, zombie fingerprints, context gate
   (auto-compact on threshold with cooldown)
-- **Claude Code hooks** — spec-driven install of Stop/SessionStart/PermissionRequest
-  hooks so agent events flow back to your service
+- **Claude Code hooks** — spec-driven install of Stop/SessionStart/PermissionRequest/
+  UserPromptSubmit/Notification/PostToolUse hooks so agent events flow back to your service
 - **Skills** — markdown skill registry with prompt expansion
 - **ACP executor** — protocol-level completion, preferred over tmux async when present
 - **Orchestrator & voice-call scaffolding** — hook manager, command registry,

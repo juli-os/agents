@@ -13,9 +13,9 @@ export interface HookSpec {
   /** CC hook 事件名（Stop / SessionStart / PermissionRequest / UserPromptSubmit / Notification / PostToolUse）。 */
   readonly event: string;
   /** 工具名白名单（正则 include 过滤，官方机制）：省略=全量。PostToolUse
-   * 钉 `^skill__` 只放 skill 工具调用进来——高频工具（Bash/Read/Edit）在
-   * CC 层即被筛掉，hook 命令零开销（2026-10-02 skill 追溯，二进制实证
-   * skill 工具名 = `skill__<name>` 前缀）。 */
+   * 钉 `^(Skill$|skill__)` 只放 skill 工具调用进来（CC 实测 tool_name=
+   * "Skill"，`skill__<name>` 为规范兼容保留）——高频工具（Bash/Read/Edit）
+   * 在 CC 层即被筛掉，hook 命令零开销（2026-10-02 skill 追溯）。 */
   readonly matcher?: string;
   /** 完整命令行（通常 = `node <dist>/cli/hook.js <verb> "$(tmux ...)" ...`）。 */
   readonly command: string;
@@ -98,12 +98,12 @@ export const defaultHookSpecs = (hookJsPath: string, password = '', serviceUrl =
   // 结算/五 hook 全灭——拼成绝对路径后不再依赖派生环境的 PATH。
   const session = `"$(${TMUX_BIN} display-message -p '#{session_name}')"`;
   // POSIX 单引号包裹（与 pty.ts 同款）：JSON.stringify 的双引号会让 hook
-  // 执行时被 shell 展开 $/反引号/$()——密码/URL 值当命令跑。
+  // 执行时被 shell 展开 $/反引号/$()——密码/URL/hook.js 路径值当命令跑。
   const shQuote = (v: string): string => `'${v.replace(/'/g, `'\\''`)}'`;
   const envPrefix = password !== '' ? `JULI_PASSWORD=${shQuote(password)} ` : '';
   const urlPrefix = serviceUrl !== '' ? `JULI_SERVICE_URL=${shQuote(serviceUrl)} ` : '';
   const run = (verb: string, extra = ''): string =>
-    `${urlPrefix}${envPrefix}node ${JSON.stringify(hookJsPath)} ${verb} ${session}${extra}`;
+    `${urlPrefix}${envPrefix}node ${shQuote(hookJsPath)} ${verb} ${session}${extra}`;
   return [
     { event: 'Stop', command: run('notify', ' done') },
     { event: 'SessionStart', command: run('claude-start') },

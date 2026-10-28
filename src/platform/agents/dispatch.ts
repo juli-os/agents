@@ -42,6 +42,10 @@ export interface ProvisioningOpts {
 
 const defaultSleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+/** 选择菜单连按看门狗上限（2026-10-23）：连续 N 次按默认项确认菜单仍不
+ * 消失 = 疑似误检或需人工——中止派发。 */
+const MAX_MENU_PRESSES = 5;
+
 /** 目录等价比较（绑定会话复用校验用）：macOS tmux 会把 /tmp 报成 /private/tmp，
  * 先各自 realpath（不存在则退回去尾斜杠原样），消掉符号链接与尾斜杠差异。 */
 const sameDir = (a: string, b: string): boolean => {
@@ -71,16 +75,22 @@ export const createProvisioningDispatch = (opts: ProvisioningOpts) => {
       const action = decideContextAction(prev, curWf, lastTokens, gate.threshold, Date.now());
       // compactAt 只在真执行 compact 时刷新——冷却窗内的无动作 tick 不得重置
       // 冷却；clear 后保留旧 compactAt，恰好压住「摄取滞后的 stale 膨胀值 +
-      // 新单」的误 compact。
-      gateState.set(session, {
+      // 新单」的误 compact。斜杠发送失败不推进状态：下次派发按旧状态重判
+      // （clear/compact 幂等，重试无害）——失败的 clear 若把 wf 标成已切换，
+      // 旧上下文会整单滞留到下一次切单。
+      const settled: ContextGateState = {
         wf: curWf, lastInputTokens: lastTokens,
         compactAt: action === 'compact' ? Date.now() : prev?.compactAt,
-      });
-      if (action === null) return;
+      };
+      if (action === null) {
+        gateState.set(session, settled);
+        return;
+      }
       opts.log?.(`contextGate ${session}: ${action}（切单=${prev?.wf ?? '∅'}→${curWf || '∅'} · lastIn=${lastTokens}）`);
       const slash = action === 'clear' ? '/clear' : '/compact';
       const sent = await opts.tmux.sendTextConfirmed(session, slash);
-      if (!sent.ok) { opts.log?.(`contextGate ${session}: ${slash} 发送失败（降级直发任务）`); return; }
+      if (!sent.ok) { opts.log?.(`contextGate ${session}: ${slash} 发送失败（降级直发任务，状态不推进、下次重判）`); return; }
+      gateState.set(session, settled);
       // 等 REPL 回就绪（/compact 可能要跑一阵；/clear 快）。
       const deadline = Date.now() + 120_000;
       for (;;) {
@@ -126,6 +136,7 @@ export const createProvisioningDispatch = (opts: ProvisioningOpts) => {
     const t0 = Date.now();
     let trustAccepted = false;
     let bootedHere = false;
+    let selectionPresses = 0; // 2026-10-23：菜单连按看门狗（连续 MAX_MENU_PRESSES 次未消=提前中止）
     let probe = await probePane(opts.tmux, session);
     if (probe.foregroundIsShell) {
       const cmd = opts.bootFor?.(session) ?? boot;
@@ -137,6 +148,9 @@ export const createProvisioningDispatch = (opts: ProvisioningOpts) => {
     for (;;) {
       probe = await probePane(opts.tmux, session);
       if (probe.ready) break;
+      // 看门狗只盯「连续在场」的菜单：探测到菜单不在（上一按已被消化、转入
+      // 别的交互态）即清零——合法的多段菜单流（每段被 Enter 消化）不累计误杀。
+      if (!probe.liveSelection) selectionPresses = 0;
       if (probe.trustDialog) {
         // CC 信任对话框默认高亮是「No, exit」——裸 Enter 会退出 agent
         // （2026-09-12 三跑事故：Enter 选了 No，claude 退出回 shell）。
@@ -148,18 +162,24 @@ export const createProvisioningDispatch = (opts: ProvisioningOpts) => {
           if (!down.ok) return down;
           const acc = await opts.tmux.sendText(session, '');
           if (!acc.ok) return acc;
-        } else {
-          await sleep(pollMs); // 已接受仍在渲染中，等下一轮 probe
         }
+        // 已接受仍在渲染中：等下一轮 probe（循环底部统一 sleep(pollMs)）。
       } else if (probe.liveSelection) {
         // 选择菜单（权限/模型/部署确认/询问）→ 按默认高亮项 Enter 同意
         // （2026-09-21 用户裁定：审核面在 juli 闸门，任务既已过闸，claude
         // 交互层不再二次审核；破坏性缺省的信任对话框走上方 Down+Enter 分支）。
         // 每轮至多一次按键；菜单未消等下一轮 probe，waitMs 兜底。
-        opts.log?.(`dispatch ${session}: 选择菜单——按默认项 Enter 同意（juli 闸门已审）`);
+        // 2026-10-23 修正：连续 5 次确认菜单仍不消失=疑似误检（静态文本）或
+        // 菜单无法自动通过——提前中止并说清原因，不再空耗满 waitMs。
+        selectionPresses += 1;
+        if (selectionPresses > MAX_MENU_PRESSES) {
+          return err(new Error(
+            `会话 ${session} 的选择菜单 ${selectionPresses - 1} 次确认仍未消失（疑似误检或需人工处理）——派发中止，任务未发出`,
+          ));
+        }
+        opts.log?.(`dispatch ${session}: 选择菜单——按默认项 Enter 同意（juli 闸门已审，第 ${selectionPresses}/${MAX_MENU_PRESSES} 次）`);
         const acc = await opts.tmux.sendText(session, '');
         if (!acc.ok) return acc;
-        await sleep(pollMs);
       }
       if (Date.now() - t0 > waitMs) {
         return err(new Error(

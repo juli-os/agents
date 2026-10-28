@@ -46,7 +46,9 @@ export const createPty = (
   child.stderr?.on('data', onData); // 终端语义：stderr 也进 pane
   child.stdin?.on('error', () => undefined); // EPIPE（子进程已退）不得炸宿主进程
   const exit = new Promise<number>((resolve) => {
-    child.on('exit', (code) => resolve(code ?? 0));
+    // 信号致死（kill() 的正常路径）不能记成 0——那是「干净退出」的语义位；
+    // 记 -1 与 spawn error 同档。当前消费方只把 exit 当完成信号，不读数值。
+    child.on('exit', (code, signal) => resolve(signal !== null ? -1 : (code ?? 0)));
     child.on('error', () => resolve(-1));
   });
   return {

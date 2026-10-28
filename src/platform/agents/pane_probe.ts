@@ -2,6 +2,9 @@
 // 交互状态——确定性启发式，零 LLM。发射器与发送方共用同一套"什么算就绪"。
 
 import type { TmuxClient } from './tmux.ts';
+import { paneMenuVisible } from '../shared/paneFingerprint.ts';
+
+export { paneAwaitingInput } from '../shared/paneFingerprint.ts'; // 转发：探针消费方零改动
 
 export interface PaneProbe {
   readonly session: string;
@@ -19,9 +22,6 @@ export interface PaneProbe {
 }
 
 const AGENT_NAMES = ['claude', 'codex', 'copilot', 'aider'] as const;
-
-import { paneAwaitingInput } from '../shared/paneFingerprint.ts';
-export { paneAwaitingInput }; // 转发：探针消费方零改动
 
 const paneCurrentCommand = async (tmux: TmuxClient, session: string): Promise<string> => {
   const res = await tmux.exec(['list-panes', '-t', session, '-F', '#{pane_current_command}']);
@@ -47,12 +47,15 @@ export const probePane = async (tmux: TmuxClient, session: string): Promise<Pane
   }
   const pane = cap.value;
   const lower = pane.toLowerCase();
-  const agent = AGENT_NAMES.find((a) => cmd.includes(a) || lower.includes(a)) ?? cmd;
+  const agent = AGENT_NAMES.find((a) => cmd.toLowerCase().includes(a) || lower.includes(a)) ?? cmd;
   const alive = true; // 前台命令非 shell 且 pane 可读 → 进程层面活着
   const trustDialog = lower.includes('do you trust') || lower.includes('trust this');
-  const liveSelection = /❯\s*\d|[1-9]\.\s+(yes|no|allow|deny)/i.test(pane);
+  // 2026-10-23 事故修正：菜单判定走共享 paneMenuVisible（词边界+底部窗），
+  // 汇报文本里的编号清单（如「2. node migrate…」的 no 前缀）不再被误检。
+  const liveSelection = paneMenuVisible(pane);
   const lastLine = pane.trimEnd().split('\n').at(-1) ?? '';
-  const ready = alive && !trustDialog && !liveSelection && lastLine.length < 120;
+  // alive 到此处恒真（前置早退已排除 shell/不可读），不再参与与运算。
+  const ready = !trustDialog && !liveSelection && lastLine.length < 120;
 
   return {
     session, foregroundIsShell: false, agentAlive: alive, agent,

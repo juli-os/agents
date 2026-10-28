@@ -114,6 +114,9 @@ export interface TmuxClient {
   hasSession(name: string): Promise<boolean>;
   /** 原生命令面（pane-probe 等确定性探测用）。 */
   exec(args: readonly string[]): Promise<Result<string, Error>>;
+  /** 全部会话名。任何失败（含 tmux 不在）都归一为空数组——签名无错误通道，
+   * 消费方（snapshot）以 stale 快照兜底、零会话与故障同形即可；要区分
+   * 「无 server」与真错误用 listSessionsDetailed。 */
   listSessions(): Promise<readonly string[]>;
   /** 单条 list-sessions 批量取会话元数据（列表面 N+1 消除）：
    * `#{session_name}\t#{session_attached}\t#{pane_current_path}\t#{pane_current_command}`。
@@ -199,17 +202,12 @@ export const createTmuxClient = (opts: {
       return res.ok ? ok(undefined) : err(res.error);
     },
     async sendText(name, text) {
-      if (text.length > 10) {
-        // bracketed-paste：粘贴语义整段进入输入行，回车一次提交——大段
-        // prompt 的原子性保证（对齐 Go 版 SendConfirmed）。
-        const pasted = `\x1b[200~${text}\x1b[201~`;
-        const a = await run(TMUX_BIN, [...socketArgs, 'send-keys', '-t', name, '-l', pasted]);
-        if (!a.ok) return a;
-        const b = await run(TMUX_BIN, [...socketArgs, 'send-keys', '-t', name, 'Enter']);
-        return b.ok ? ok(undefined) : err(b.error);
-      }
-      const res = await run(TMUX_BIN, [...socketArgs, 'send-keys', '-t', name, '-l', text]);
-      if (!res.ok) return res;
+      // >10 字符走 bracketed-paste：粘贴语义整段进入输入行——大段 prompt 的
+      // 原子性保证（对齐 Go 版 SendConfirmed）；短文本直接字面键（tmux 对短
+      // 参数的逐键合并语义与 Go 版一致）。两枝差异只在载荷，回车共用一次。
+      const body = text.length > 10 ? `\x1b[200~${text}\x1b[201~` : text;
+      const sent = await run(TMUX_BIN, [...socketArgs, 'send-keys', '-t', name, '-l', body]);
+      if (!sent.ok) return sent;
       const enter = await run(TMUX_BIN, [...socketArgs, 'send-keys', '-t', name, 'Enter']);
       return enter.ok ? ok(undefined) : err(enter.error);
     },
@@ -236,7 +234,7 @@ export const createTmuxClient = (opts: {
           return err(new Error(
             seenInBox
               ? 'submit_unconfirmed: prompt 已入框但连续补 Enter 未被消费（输入框未重置）——任务未确认提交'
-              : 'submit_lost: prompt 首尾指纹始终未出现在 pane——疑似粘贴丢失，任务未确认提交',
+              : 'submit_lost: prompt 末行指纹始终未出现在 pane——疑似粘贴丢失，任务未确认提交',
           ));
         }
         // 被吞只补 Enter（空输入框上的 Enter 是 no-op，安全）；从没见过指纹 =

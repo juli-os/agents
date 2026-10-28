@@ -193,6 +193,10 @@ export const createVoiceCall = (mode: CallMode, deps: VoiceCallDeps): VoiceCall 
       if (!plan) return { events, reply: '' };
       const res = await deps.dispatch(plan.session, plan.brief);
       if (!res.ok) {
+        // 计划已随本次确认消费——失败同样要出清 proposed，否则 phase getter
+        // 与事件流都悬在「已提议」（下游待定标记只能被 chat:phase 清除）。
+        phase = 'discuss';
+        emit(events, 'chat:phase', 'discuss');
         emit(events, 'chat:error', `派发失败: ${res.error.message}`);
         return { events, reply: '' };
       }

@@ -85,7 +85,11 @@ export const takeSnapshot = async (deps: SnapshotDeps): Promise<Result<Snapshot,
   }
   const snap: Snapshot = { snapshotAt: now.toISOString(), sessions };
   const saved = saveSnapshot(deps.file, snap);
-  if (!saved.ok) deps.log?.(`[snapshot] 保存失败: ${saved.error.message}`);
+  if (!saved.ok) {
+    // 快照是恢复的唯一依据：持久化失败必须如实上报（文件因原子写保持上一份）。
+    deps.log?.(`[snapshot] 保存失败: ${saved.error.message}`);
+    return { ok: false, error: saved.error };
+  }
   return ok(snap);
 };
 
@@ -112,7 +116,8 @@ export const recoverFromSnapshot = async (deps: SnapshotDeps): Promise<number> =
     }
     if (ss.hadAgent && ss.command !== '' && !ss.command.includes('zsh')) {
       // agent 身份保留：重启其启动命令（claude/codex CLI 自带会话续接）。
-      await deps.tmux.sendText(ss.name, ss.command);
+      const sent = await deps.tmux.sendText(ss.name, ss.command);
+      if (!sent.ok) deps.log?.(`[snapshot] 重发 ${ss.name} 启动命令失败: ${sent.error.message}`);
     }
     recovered++;
     deps.log?.(`[snapshot] 已恢复会话 ${ss.name}`);

@@ -6,7 +6,7 @@ import { err, ok, toResult, type Result } from '../shared/result.ts';
 import { truncate, type JsonRecord } from '../shared/json.ts';
 import type { Clock } from '../shared/clock.ts';
 import type { ChatLlmPort, ChatMessage, ToolCallRequest } from '../../contracts/ports.ts';
-import { makeAllTools, toolSchemas, type Tool, type Assessor, type Assessment } from './tools.ts';
+import { toolSchemas, type Tool, type Assessor, type Assessment } from './tools.ts';
 
 // ---- 事件流 -----------------------------------------------------------------------
 
@@ -47,10 +47,13 @@ export const createHookManager = (): HookManager => {
       handlers.set(type, [...(handlers.get(type) ?? []), handler]);
     },
     async fire(p) {
+      // 链式传递：handler 的返回值是下一棒的输入。此前实现首个 handler 即
+      // 短路 return——按签名 handler 必返回 HookPayload，后注册的同类型
+      // hook 永远不执行（多 hook 静默失效）。
       for (const h of handlers.get(p.type) ?? []) {
         try {
           const r = await h(p);
-          if (r !== undefined) return r;
+          if (r !== undefined) p = r;
         } catch { /* hook 异常不阻断主链 */ }
       }
       return p;
@@ -295,7 +298,8 @@ export const createOrchestrator = (deps: OrchestratorDeps): Orchestrator => {
       const cmd = commands.match(input);
       if (cmd) {
         const args = input.trim().split(/\s+/).slice(1);
-        await toResult(cmd.run(args, emit), 'command failed');
+        const res = await toResult(cmd.run(args, emit), 'command failed');
+        if (!res.ok) emit({ type: 'text', content: `命令执行失败: ${res.error.message}` });
         emit({ type: 'done' });
         return;
       }
@@ -341,7 +345,5 @@ export const registerSkillCommands = (
       emit({ type: 'text', content: res.ok ? `技能 ${name} 已激活（对下一条消息生效）` : res.error.message });
     },
   });
-  void emitText;
+  void emitText; // 死参数：命令反馈已走 emit 通道；主仓 runtime.ts 仍三参调用，签名保留
 };
-
-export { makeAllTools, type Assessment };

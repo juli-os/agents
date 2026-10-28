@@ -43,7 +43,10 @@ export const parseSkillUsedStdin = (raw: string): { skill: string; tool_name: st
     const sk = typeof payload?.tool_input?.skill === 'string' ? payload.tool_input.skill : '';
     return sk === '' ? null : { skill: sk, tool_name: tool };
   }
-  if (tool.startsWith('skill__')) return { skill: tool.slice('skill__'.length), tool_name: tool };
+  if (tool.startsWith('skill__')) {
+    const sk = tool.slice('skill__'.length);
+    return sk === '' ? null : { skill: sk, tool_name: tool };
+  }
   return null;
 };
 

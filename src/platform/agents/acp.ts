@@ -32,7 +32,7 @@ interface Pending {
   resolve: (r: { result?: unknown; error?: { code: number; message: string } }) => void;
 }
 
-interface AcptThread {
+interface AcpThread {
   readonly threadId: string;
   turnId: string;
   lastMessage: string;
@@ -66,7 +66,7 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
   let nextId = 0;
   let initialized = false;
   const pending = new Map<number, Pending>();
-  const threads = new Map<string, AcptThread>(); // session 名 → ACP thread
+  const threads = new Map<string, AcpThread>(); // session 名 → ACP thread
 
   const writeJson = (v: unknown): Promise<void> =>
     new Promise((resolve, reject) => {
@@ -134,12 +134,31 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
     }
   };
 
+  // 进程死亡/停机的收尾：在途 RPC 与在途 turn 的 waiter 立即失败（不能静默
+  // 挂到 30 分钟兜底超时），并清空陈旧 thread——新进程里旧 threadId 已失效，
+  // 留着会让 ensureThread 永远命中死 entry，会话被钉死在报错上无法自愈。
+  const failInflight = (reason: string): void => {
+    const message = `acp: ${reason}`;
+    for (const p of pending.values()) {
+      p.resolve({ error: { code: -32000, message } });
+    }
+    pending.clear();
+    for (const t of threads.values()) {
+      // waiter 以非 'completed' 状态唤醒：dispatchSync 侧统一落成 err。
+      for (const w of t.waiters.splice(0)) w(reason);
+    }
+    threads.clear();
+    initialized = false;
+  };
+
   const kill = (): void => {
     try {
       proc?.kill('SIGKILL');
     } catch { /* 已死 */ }
     proc = null;
-    initialized = false;
+    // exit 事件是异步到达且带接替者守卫，收尾必须在 kill 内同步完成——
+    // stop() 时在途 turn 才能立即落 err 而非挂死。
+    failInflight('agent process stopped');
   };
 
   let starting: Promise<Result<void, Error>> | null = null;
@@ -158,34 +177,32 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
     if (deps.apiKey !== '' && env['GLM_API_KEY'] === undefined) {
       env['GLM_API_KEY'] = deps.apiKey; // codex 的 GLM provider 读这个
     }
-    proc = spawn(deps.command[0] ?? '', deps.command.slice(1), { env, stdio: ['pipe', 'pipe', 'pipe'] });
+    const child = spawn(deps.command[0] ?? '', deps.command.slice(1), { env, stdio: ['pipe', 'pipe', 'pipe'] });
+    proc = child;
     // stderr 必须排干：>64KB 堆积会卡死子进程直到 30 分钟超时（路由到日志缝）。
     // StringDecoder：chunk 边界劈开的多字节字符不出乱码（残余半字符随进程终结丢弃）。
     const stderrDec = new StringDecoder('utf8');
-    proc.stderr?.on('data', (chunk: Buffer) => {
+    child.stderr?.on('data', (chunk: Buffer) => {
       const text = stderrDec.write(chunk).trimEnd();
       if (text !== '') deps.log(`[acp:stderr] ${text}`);
     });
-    proc.stdin?.on('error', () => undefined); // EPIPE（子进程已退）不得炸宿主进程
+    child.stdin?.on('error', () => undefined); // EPIPE（子进程已退）不得炸宿主进程
     // spawn 本身失败（ENOENT 等）发的是 'error' 事件：不接则整进程崩。
-    proc.on('error', (e) => {
-      for (const p of pending.values()) {
-        p.resolve({ error: { code: -32000, message: `acp: spawn failed: ${e.message}` } });
-      }
-      pending.clear();
-      initialized = false;
+    child.on('error', (e) => {
+      // 已被新进程接替的迟到 error 不得殃及在位者（清空新进程的 pending/proc）。
+      if (proc !== child) return;
+      failInflight(`spawn failed: ${e.message}`);
       proc = null;
     });
-    proc.on('exit', () => {
-      // 子进程死亡：所有在途调用立即失败（不静默挂死）。
-      for (const p of pending.values()) {
-        p.resolve({ error: { code: -32000, message: 'acp: agent process exited' } });
-      }
-      pending.clear();
-      initialized = false;
+    child.on('exit', () => {
+      // kill()→重启路径里旧进程的 exit 事件迟到到达（SIGKILL 异步）：此时新进程的
+      // initialize 已在 pending 里，无条件 fail 会把每次重启都打死——只收尾自己。
+      if (proc !== child) return;
+      // 子进程死亡：所有在途调用（RPC 与 turn 的 waiter）立即失败（不静默挂死）。
+      failInflight('agent process exited');
     });
     let out = '';
-    proc.stdout?.on('data', (chunk: Buffer) => {
+    child.stdout?.on('data', (chunk: Buffer) => {
       out += chunk.toString('utf8');
       let idx: number;
       while ((idx = out.indexOf('\n')) >= 0) {
@@ -213,10 +230,10 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
     return ok(undefined);
   };
 
-  const threadStarting = new Map<string, Promise<Result<AcptThread, Error>>>();
+  const threadStarting = new Map<string, Promise<Result<AcpThread, Error>>>();
   // 同上：并发下同 session 的 thread/start 只发一次，先来者不被 map 覆盖
   // （覆盖后其通知无人认领，waiter 挂到 30 分钟超时）。
-  const ensureThread = (session: string, cwd: string): Promise<Result<AcptThread, Error>> => {
+  const ensureThread = (session: string, cwd: string): Promise<Result<AcpThread, Error>> => {
     const existing = threads.get(session);
     if (existing) return Promise.resolve(ok(existing));
     let p = threadStarting.get(session);
@@ -227,14 +244,14 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
     return p;
   };
 
-  const startThread = async (session: string, cwd: string): Promise<Result<AcptThread, Error>> => {
+  const startThread = async (session: string, cwd: string): Promise<Result<AcpThread, Error>> => {
     const params: Record<string, unknown> = { cwd };
     if (deps.model !== '') params['model'] = deps.model;
     const res = await call('thread/start', params, rpcTimeoutMs);
     if (!res.ok) return err(res.error);
     const threadId = (res.value as { thread?: { id?: string } })?.thread?.id ?? '';
     if (threadId === '') return err(new Error('acp: thread/start: bad response'));
-    const t: AcptThread = {
+    const t: AcpThread = {
       threadId, turnId: '', lastMessage: '', lastError: '', waiters: [],
       pendingCompletion: null,
     };
@@ -246,7 +263,8 @@ export const createAcpExecutor = (deps: AcpDeps): AcpExecutor => {
     void source;
     const started = await startChild();
     if (!started.ok) return err(started.error);
-    // 会话名即 agent profile 名；cwd 用家目录兜底（Go：注册项目目录优先）。
+    // 会话名即 agent profile 名；cwd 优先 JULI_ACP_CWD（宿主注入），兜底服务进程
+    // 自身的 process.cwd()（Go 原版用注册项目目录/家目录；此处以工作目录兜底）。
     const t = await ensureThread(session, deps.env?.['JULI_ACP_CWD'] ?? process.cwd());
     if (!t.ok) return err(t.error);
     const thread = t.value;

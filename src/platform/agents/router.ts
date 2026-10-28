@@ -60,8 +60,7 @@ export const createSessionRouter = (deps: SessionRouterDeps): SessionRouter => {
 
 /** 生产 listSync：tmux list-sessions（可选自定 socket）。 */
 export const tmuxListSync = (socketPath?: string): readonly string[] => {
-  const args = socketPath ? ['-S', socketPath, 'list-sessions', '-F', '#{session_name}']
-    : ['list-sessions', '-F', '#{session_name}'];
+  const args = [...(socketPath ? ['-S', socketPath] : []), 'list-sessions', '-F', '#{session_name}'];
   try {
     return execFileSync(TMUX_BIN, args, { encoding: 'utf8', timeout: 3000 })
       .split('\n').map((x) => x.trim()).filter(Boolean);

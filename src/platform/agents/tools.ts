@@ -154,7 +154,7 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => [
       return err(new Error(`session ${name} not found`));
     }
     // 门 1：pane 交互状态。选择菜单绝不盲发——守护者评估后才能动。
-    const probe = await probePane(r.value, name);
+    let probe = await probePane(r.value, name);
     if (probe.liveSelection) {
       if (!deps.assessor) {
         return err(new Error('selection menu visible — guardian assessor not configured, send refused'));
@@ -170,13 +170,13 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => [
         // 确认后清菜单：回一个「1」，再继续原消息。
         await r.value.sendText(name, '1');
         await new Promise((res2) => setTimeout(res2, 800));
+        probe = await probePane(r.value, name); // 面板被动过：重探后再过门 2
       } else {
         return err(new Error(`guardian undecided (${verdict.value.reason}) — send refused`));
       }
     }
     // 门 2：裸 shell → 快照自愈重启 agent。
-    const fresh = await probePane(r.value, name);
-    if (fresh.foregroundIsShell) {
+    if (probe.foregroundIsShell) {
       if (!deps.healer) {
         return err(new Error(`bare shell, no coding agent running (${name})`));
       }
@@ -199,9 +199,9 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => [
     if (!res.ok) return res;
     const lines = res.value.split('\n');
     const total = lines.length;
-    // 越界 offset 归位到 total：返回空页，而不是负 end 索引从数组尾错读。
-    const skip = Math.min(num(a, 'offset', 0), total);
-    const take = num(a, 'lines', 200);
+    // 越界/负值 offset、负值 lines 归位：返回空页，而不是错位索引从数组尾错读。
+    const skip = Math.max(0, Math.min(num(a, 'offset', 0), total));
+    const take = Math.max(0, num(a, 'lines', 200));
     const page = lines.slice(Math.max(0, total - skip - take), total - skip);
     return ok(JSON.stringify({ lines: page.join('\n'), total_lines: total, has_more: total - skip > take }));
   }),
@@ -238,9 +238,11 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => [
     if (notifier) {
       const after = notifier.snapshot(session);
       const wait = notifier.waitAfter(session, after);
-      const timer = new Promise<'timeout'>((res) => setTimeout(() => res('timeout'), timeoutMs));
+      let timerId: ReturnType<typeof setTimeout> | undefined;
+      const timer = new Promise<'timeout'>((res) => { timerId = setTimeout(() => res('timeout'), timeoutMs); });
       const result = await Promise.race([wait.then(() => 'idle' as const), timer]);
       wait.cancel();
+      clearTimeout(timerId); // wait 先到也撤定时器：ref 计时器会挂住进程关闭最长 timeoutMs
       if (result === 'timeout') return err(new Error(`wait timeout after ${timeoutMs}ms`));
     } else {
       // 无通知器（部署简化态）：等待期满后直接返回当前输出。
@@ -258,9 +260,11 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => [
     const cap = await r.value.capturePane(str(a, 'name'), 5000);
     if (!cap.ok) return cap;
     const dir = join(deps.cwd, '.contexts');
-    await mkdir(dir, { recursive: true });
-    await writeFile(join(dir, str(a, 'file')), cap.value, 'utf8');
-    return ok(`saved ${cap.value.length} chars to .contexts/${str(a, 'file')}`);
+    // file 名来自 LLM：围栏以 .contexts 为根，'../' 逃逸直接拒绝。
+    const abs = withinCwd(dir, str(a, 'file'));
+    if (!abs) return err(new Error('path escapes workspace'));
+    return toResult(mkdir(dir, { recursive: true }).then(() => writeFile(abs, cap.value, 'utf8')).then(() =>
+      `saved ${cap.value.length} chars to .contexts/${str(a, 'file')}`), 'save failed');
   }),
   tool('restore_context', 'Send a saved context file back into a session (summary briefing).', [
     { name: 'name', type: 'string', description: 'Session name', required: true },
@@ -268,7 +272,9 @@ const sessionTools = (deps: ToolsDeps): readonly Tool[] => [
   ], async (a) => {
     const r = requireTmux(deps);
     if (!r.ok) return r;
-    const res = await toResult(readFile(join(deps.cwd, '.contexts', str(a, 'file')), 'utf8'), 'context file not found');
+    const abs = withinCwd(join(deps.cwd, '.contexts'), str(a, 'file'));
+    if (!abs) return err(new Error('path escapes workspace'));
+    const res = await toResult(readFile(abs, 'utf8'), 'context file not found');
     if (!res.ok) return res;
     const brief = `以下是此前会话的上下文存档，请据此继续：\n\n${res.value.slice(-6000)}`;
     return (await r.value.sendText(str(a, 'name'), brief)).ok
@@ -319,8 +325,8 @@ const confirmationTools = (deps: ToolsDeps): readonly Tool[] => [
     return (await r.value.sendText(str(a, 'name'), str(a, 'response'))).ok
       ? ok('response sent')
       : err(new Error('send failed'));
-    }),
-  ];
+  }),
+];
 
 // ---- 文件 / 状态类工具 -------------------------------------------------------------
 
@@ -345,9 +351,9 @@ const fileTools = (deps: ToolsDeps): readonly Tool[] => [
   ], async (a) => {
     const abs = withinCwd(deps.cwd, str(a, 'path'));
     if (!abs) return err(new Error('path escapes workspace'));
-    await mkdir(abs.replace(/[/\\][^/\\]*$/, ''), { recursive: true });
-    await writeFile(abs, str(a, 'content'), 'utf8');
-    return ok(`wrote ${str(a, 'path')}`);
+    return toResult(mkdir(abs.replace(/[/\\][^/\\]*$/, ''), { recursive: true }).then(() =>
+      writeFile(abs, str(a, 'content'), 'utf8')).then(() =>
+      `wrote ${str(a, 'path')}`), 'write failed');
   }),
   tool('list_directory', 'List a directory inside the workspace.', [
     { name: 'path', type: 'string', description: 'Relative path (default .)', required: false },
@@ -359,6 +365,11 @@ const fileTools = (deps: ToolsDeps): readonly Tool[] => [
   tool('run_command', 'Run a short read-only command inside the workspace (git status, ls ...).', [
     { name: 'command', type: 'string', description: 'Command with args (no shell)', required: true },
   ], async (a) => {
+    // 门 0 同款内容策略：此工具直接起子进程，不拦即等于安全围栏另有侧门。
+    const blocked = isBlockedCommand(str(a, 'command'));
+    if (blocked !== null) {
+      return err(new Error(`command blocked by safety policy: matched pattern "${blocked}"`));
+    }
     const parts = str(a, 'command').split(/\s+/).filter(Boolean);
     return toResult(new Promise<string>((res, rej) => {
       execFile(parts[0] ?? '', parts.slice(1), { cwd: deps.cwd, timeout: 15_000 }, (e, out) =>
@@ -382,8 +393,8 @@ const stateTools = (deps: ToolsDeps): readonly Tool[] => {
     ], async (a) => {
       const st = await readState();
       st[str(a, 'key')] = str(a, 'value');
-      await writeFile(deps.statePath ?? join(deps.cwd, 'state.json'), JSON.stringify(st, null, 2), 'utf8');
-      return ok(`set ${str(a, 'key')}`);
+      return toResult(writeFile(deps.statePath ?? join(deps.cwd, 'state.json'), JSON.stringify(st, null, 2), 'utf8').then(() =>
+        `set ${str(a, 'key')}`), 'state write failed');
     }),
     tool('get_state', 'Read a persisted state value (empty string when unset).', [
       { name: 'key', type: 'string', description: 'State key', required: true },
