@@ -27,11 +27,15 @@
     "build": "tsc -p tsconfig.build.json && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/index.js && esbuild bin/juli-agents.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/juli-agents.js && chmod +x dist/juli-agents.js && python3 scripts/postbuild.py",
     "test": "node --test \"test/*.test.ts\"",
     "smoke:dist": "node --input-type=module -e \"import('./dist/index.js').then(m => { if (typeof m.resolveTmuxBin !== 'function' || typeof m.createTmuxClient !== 'function' || typeof m.createProvisioningDispatch !== 'function') process.exit(1); console.log('DIST SMOKE OK'); })\"",
+    "docs:gen": "node scripts/gen-docs.mjs && typedoc",
+    "docs:build": "npm run docs:gen && mkdocs build --strict",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "esbuild": "^0.24.0",
+    "typedoc": "^0.28.20",
+    "typedoc-plugin-markdown": "^4.14.1",
     "typescript": "^5.6.0"
   },
   "publishConfig": {
