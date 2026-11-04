@@ -8,7 +8,8 @@
 //      JULI_HERDR_SESSION) → pane.rename(juli:<会话名>) → 关默认 tab；
 //   ② sendText 大文本走 bracketed-paste 包裹 + enter（与 tmux 同款）；
 //   ③ 提交确认循环按 pane.read 轮询（吞 Enter 只补 Enter / 丢粘贴补一次）；
-//   ④ exec 只翻译封闭形状集，未知形状显性报错；
+//   ④ 命名观测面（sendKey/foregroundCommandOf/panePathOf/sessionBirthsOf）
+//      直译，无 exec 逃逸口；
 //   ⑤ workspace label = 会话名（hasSession/listSessions 的键）。
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';

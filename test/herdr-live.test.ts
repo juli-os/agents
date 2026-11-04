@@ -1,8 +1,9 @@
 // herdr 真机冒烟（herdr 二进制不在或 JULI_HERDR_LIVE=0 时跳过）：随机一次性
 // namespace（绝不碰默认 session），走 createHerdrClient 全链——server 自动
-// 拉起、创建舞步（tab env 注入）、sendText/抓屏、exec 翻译、杀会话、server
-// 停机清理。不上 claude（那是 e2e 面）；这里锚的是 herdr 适配层与真身
-// server 的协议契约（0.9.5 实测口径，见 herdr.ts 文件头）。
+// 拉起、创建舞步（tab env 注入）、sendText/抓屏、命名观测面（前台进程名/
+// pane cwd）、杀会话、server 停机清理。不上 claude（那是 e2e 面）；这里锚
+// 的是 herdr 适配层与真身 server 的协议契约（0.9.5 实测口径，见 herdr.ts
+// 文件头）。
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, existsSync } from 'node:fs';

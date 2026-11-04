@@ -86,10 +86,15 @@ export const createAgentBackend = (opts: AgentBackendOpts = {}): AgentBackend =>
         // 双通道落位（herdr 无 server 级全局 env API）：①写 0600 env 文件
         //（恢复态 boot 命令 source 它）；②更新新建 workspace 的 tab env
         // 注入面（client.setEnv）。已在跑的 workspace 不受影响——与 tmux
-        // 全局环境的诚实边界同款。
+        // 全局环境的诚实边界同款。落盘失败=尽力语义（R2 复审 #1）：记日志
+        // 不抛、注入面照常更新——与 tmux 分枝同形，HTTP 热改路径不炸。
         const record = Object.fromEntries(vars);
-        mkdirSync(dataDir, { recursive: true });
-        writeAgentEnvFile(envFile, record);
+        try {
+          mkdirSync(dataDir, { recursive: true });
+          writeAgentEnvFile(envFile, record);
+        } catch (e) {
+          opts.log?.(`[ai] herdr agent-env.sh 落盘失败（${e instanceof Error ? e.message : String(e)}）——恢复态兜底缺失，新建面注入仍生效`);
+        }
         client.setEnv(record);
       },
     };

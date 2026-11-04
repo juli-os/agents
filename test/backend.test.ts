@@ -4,7 +4,7 @@
 // 尽力语义（失败记日志不抛）。真机链路见 herdr-live.test.ts。
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, readFileSync, statSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync, statSync, existsSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createAgentBackend } from '../src/platform/agents/backend.ts';
@@ -125,6 +125,26 @@ describe('createAgentBackend（herdr 分枝——fake server）', () => {
     const env = tab.params['env'] as Record<string, string>;
     assert.equal(env['ANTHROPIC_API_KEY'], 'sk-backend');
     assert.equal(env['JULI_HERDR_SESSION'], 'juli-env-probe');
+  });
+
+  it('applyEnv 尽力语义（R2 #1）：落盘失败记日志不抛、注入面照常更新', async () => {
+    const logs: string[] = [];
+    const blocked = join(dir, 'not-a-dir'); // 占位文件：mkdirSync(其子路径) 必炸
+    writeFileSync(blocked, 'x');
+    const b = createAgentBackend({
+      backend: 'herdr',
+      herdrSession: 'juli-backend-test',
+      herdrSocketPath: fake.socketPath,
+      dataDir: join(blocked, 'sub'),
+      log: (m) => logs.push(m),
+    });
+    b.applyEnv([['ANTHROPIC_API_KEY', 'sk-x']]);
+    assert.ok(logs.some((m) => m.includes('落盘失败')), logs.join(' | '));
+    // 注入面仍生效：新建会话 tab env 带上
+    const r = await b.terminal.newSession('juli-fallback-probe', '/tmp');
+    assert.equal(r.ok, true);
+    const tab = fake.requests.filter((x) => x.method === 'tab.create').at(-1)!;
+    assert.equal((tab.params['env'] as Record<string, string>)['ANTHROPIC_API_KEY'], 'sk-x');
   });
 
   it('attach：会话不存在明确报错不代建（不拉起 TUI）', async () => {
