@@ -38,6 +38,11 @@ export interface AgentBackendOpts {
   readonly herdrSocketPath?: string;
   /** env 文件落盘目录（引擎 data_dir；缺省 ~/.juli-service）。tmux 后端忽略。 */
   readonly dataDir?: string;
+  /** 终端覆盖位（测试/嵌入接缝，与 runtime 的 seams.tmux 同一语义）：提供时
+   * 工厂不内建终端——产物 terminal、tmux 分枝的 applyEnv/attach 全走它，
+   * 绝不触碰真实 tmux。herdr 分枝仍构造内部 client（applyEnv 的 setEnv
+   * 落点），terminal 面返回覆盖值（该组合仅出现在测试，不同时配 herdr）。 */
+  readonly terminal?: TmuxClient;
   readonly log?: (m: string) => void;
 }
 
@@ -72,7 +77,7 @@ export const createAgentBackend = (opts: AgentBackendOpts = {}): AgentBackend =>
     return {
       kind: 'herdr',
       describe: `herdr session=${ns}`,
-      terminal: client,
+      terminal: opts.terminal ?? client,
       hookSpecs: herdrHookSpecs,
       listSync: () => herdrListSync(ns),
       attach: herdrAttach({ client, session: ns }),
@@ -89,7 +94,7 @@ export const createAgentBackend = (opts: AgentBackendOpts = {}): AgentBackend =>
       },
     };
   }
-  const terminal = createTmuxClient({ socketPath: opts.socketPath });
+  const terminal = opts.terminal ?? createTmuxClient({ socketPath: opts.socketPath });
   return {
     kind: 'tmux',
     describe: `tmux socket=${opts.socketPath ?? 'default'}`,

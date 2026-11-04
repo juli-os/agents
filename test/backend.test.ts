@@ -52,6 +52,18 @@ describe('createAgentBackend（tmux 分枝——缺省后端，零行为变化�
     const b = createAgentBackend({ socketPath: '/nonexistent/juli-test.sock' });
     assert.deepEqual(b.listSync(), []);
   });
+
+  it('terminal 覆盖位（测试接缝）：产物走注入件、applyEnv 绝不触真 tmux', async () => {
+    const seen: string[] = [];
+    const fake = {
+      async setEnv(vars: Record<string, string>) { seen.push(...Object.keys(vars)); return { ok: true as const, value: undefined }; },
+    };
+    const b = createAgentBackend({ terminal: fake as never });
+    assert.equal(b.terminal, fake);
+    b.applyEnv([['ANTHROPIC_API_KEY', 'sk-x']]);
+    await new Promise((r) => setTimeout(r, 50));
+    assert.deepEqual(seen, ['ANTHROPIC_API_KEY']);
+  });
 });
 
 describe('createAgentBackend（herdr 分枝——fake server）', () => {
