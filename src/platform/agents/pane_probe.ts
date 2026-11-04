@@ -23,13 +23,8 @@ export interface PaneProbe {
 
 const AGENT_NAMES = ['claude', 'codex', 'copilot', 'aider'] as const;
 
-const paneCurrentCommand = async (tmux: TmuxClient, session: string): Promise<string> => {
-  const res = await tmux.exec(['list-panes', '-t', session, '-F', '#{pane_current_command}']);
-  return res.ok ? (res.value.trim().split('\n')[0] ?? '') : '';
-};
-
 export const probePane = async (tmux: TmuxClient, session: string): Promise<PaneProbe> => {
-  const cmd = await paneCurrentCommand(tmux, session);
+  const cmd = await tmux.foregroundCommandOf(session);
   const isShell = cmd === '' || ['zsh', 'bash', 'fish', 'sh'].includes(cmd);
   if (isShell) {
     return {

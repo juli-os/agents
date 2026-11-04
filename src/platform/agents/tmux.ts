@@ -107,13 +107,30 @@ export interface SubmitStats {
   readonly elapsedMs: number;
 }
 
+/** 终端按键的中性闭合集（sendKey 的入参）：tmux 侧原样进 send-keys，herdr
+ * 侧经 translateKey 翻译——新键必须两侧同补（编译期闭合，不走字符串）。 */
+export type TerminalKey =
+  | 'Enter' | 'Down' | 'Up' | 'Left' | 'Right'
+  | 'C-c' | 'C-z' | 'C-d' | 'Escape' | 'Tab';
+
 export interface TmuxClient {
   /** 本 client 绑定的 socket 路径（undefined=default socket）。web 终端
    * attach 侧用它拼 `-S`——PTY attach 是裸 tmux 命令，不经本 client。 */
   readonly socketPath?: string;
   hasSession(name: string): Promise<boolean>;
-  /** 原生命令面（pane-probe 等确定性探测用）。 */
-  exec(args: readonly string[]): Promise<Result<string, Error>>;
+  /** 发单键（对话框导航/接受用；多键文本走 sendText）。 */
+  sendKey(name: string, key: TerminalKey): Promise<Result<void, Error>>;
+  /** 会话 pane 的前台进程名（probePane 的 shell/agent 判定数据源）。
+   * 失败回空串——probe 对空 cmd 按 shell 处理（容错语义的一部分）。 */
+  foregroundCommandOf(name: string): Promise<string>;
+  /** 会话 pane 的 cwd（快照/恢复用）。失败回空串。 */
+  panePathOf(name: string): Promise<string>;
+  /** 会话名 → 出生点（epoch ms）。无 server/后端无此概念/失败 = 空表——
+   * 调用方（transcript 人机混仓门控）空表即保守回落不门控。 */
+  sessionBirthsOf(): Promise<ReadonlyMap<string, number>>;
+  /** 会话环境注入（AI 段密钥等）：tmux=set-environment -g 逐项；herdr=
+   * 新建 workspace 的 tab env 注入面。已在跑会话不受影响（两侧同语义）。 */
+  setEnv(vars: Readonly<Record<string, string>>): Promise<Result<void, Error>>;
   /** 全部会话名。任何失败（含 tmux 不在）都归一为空数组——签名无错误通道，
    * 消费方（snapshot）以 stale 快照兜底、零会话与故障同形即可；要区分
    * 「无 server」与真错误用 listSessionsDetailed。 */
@@ -157,8 +174,35 @@ export const createTmuxClient = (opts: {
   const queuedConfirmMs = opts.queuedConfirmMs ?? 8_000;
   const sleepP = opts.sleep ?? ((ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms)));
   return {
-    async exec(args) {
-      return run(TMUX_BIN, [...socketArgs, ...args]);
+    async sendKey(name, key) {
+      const res = await run(TMUX_BIN, [...socketArgs, 'send-keys', '-t', name, key]);
+      return res.ok ? ok(undefined) : err(res.error);
+    },
+    async foregroundCommandOf(name) {
+      const res = await run(TMUX_BIN, [...socketArgs, 'list-panes', '-t', name, '-F', '#{pane_current_command}']);
+      return res.ok ? (res.value.trim().split('\n')[0] ?? '') : '';
+    },
+    async panePathOf(name) {
+      const res = await run(TMUX_BIN, [...socketArgs, 'display-message', '-p', '-t', name, '#{pane_current_path}']);
+      return res.ok ? res.value.trim() : '';
+    },
+    async sessionBirthsOf() {
+      const res = await run(TMUX_BIN, [...socketArgs, 'list-sessions', '-F', '#{session_name}\t#{session_created}']);
+      const born = new Map<string, number>();
+      if (!res.ok) return born;
+      for (const line of res.value.split('\n')) {
+        const [nm, ts] = line.split('\t');
+        const t = Number(ts);
+        if (nm && Number.isFinite(t) && t > 0) born.set(nm.trim(), t * 1000);
+      }
+      return born;
+    },
+    async setEnv(vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        const res = await run(TMUX_BIN, [...socketArgs, 'set-environment', '-g', k, v]);
+        if (!res.ok) return res;
+      }
+      return ok(undefined);
     },
     async hasSession(name) {
       // run() 返回的已是 Result——此前 .then(ok) 又包一层，导致 .ok 恒真：
@@ -247,7 +291,7 @@ export const createTmuxClient = (opts: {
         }
         if (enters < 3) {
           enters += 1;
-          await this.exec(['send-keys', '-t', name, 'Enter']);
+          await this.sendKey(name, 'Enter');
         }
       }
     },
@@ -277,7 +321,7 @@ export const createTmuxClient = (opts: {
           // 只会促成提交/入队，不会重复粘贴文本。
           if (enters < 3) {
             enters += 1;
-            await this.exec(['send-keys', '-t', name, 'Enter']);
+            await this.sendKey(name, 'Enter');
           }
         }
         if (Date.now() >= deadline) break;

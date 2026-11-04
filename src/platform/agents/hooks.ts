@@ -90,13 +90,21 @@ export const installClaudeHooks = (
 
 /** 标准六 hook 命令组（tmux 会话名内嵌进命令行——CC 的 stdin 里没有它）。
  * 服务端 /api/* 全量 Bearer 认证，而 claude 派生的 hook 进程没有 JULI_PASSWORD
- * 环境——密码必须内嵌进命令行，否则 Stop 结算永远 401。 */
-export const defaultHookSpecs = (hookJsPath: string, password = '', serviceUrl = ''): readonly HookSpec[] => {
+ * 环境——密码必须内嵌进命令行，否则 Stop 结算永远 401。
+ * sessionExpr = hook 进程内解析「我在哪个会话」的 shell 表达式——随终端
+ * 后端变化（tmux=display-message 运行时反查；herdr=JULI_HERDR_SESSION env，
+ * 见 herdr.ts 的 herdrHookSpecs），六事件表只此一处（2026-11-04 R1 评审 #7）。 */
+export const defaultHookSpecs = (
+  hookJsPath: string,
+  password = '',
+  serviceUrl = '',
+  sessionExpr: string = `"$(${TMUX_BIN} display-message -p '#{session_name}')"`,
+): readonly HookSpec[] => {
   // 会话名子命令的 tmux 二进制与引擎同源走启动期解析（2026-10-08 GUI 残缺
   // PATH 事故同源封堵）：hook 平时跑在会话 login shell（profile 已修 PATH）
   // 里裸名本不出事，但 default-command 被定制或 hook 派生语境一变，Stop
   // 结算/五 hook 全灭——拼成绝对路径后不再依赖派生环境的 PATH。
-  const session = `"$(${TMUX_BIN} display-message -p '#{session_name}')"`;
+  const session = sessionExpr;
   // POSIX 单引号包裹（与 pty.ts 同款）：JSON.stringify 的双引号会让 hook
   // 执行时被 shell 展开 $/反引号/$()——密码/URL/hook.js 路径值当命令跑。
   const shQuote = (v: string): string => `'${v.replace(/'/g, `'\\''`)}'`;

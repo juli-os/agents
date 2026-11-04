@@ -9,6 +9,8 @@ test('facade value-export surface matches the explicit snapshot list', () => {
   const expected = [
     // tmux
     'resolveTmuxBin', 'TMUX_BIN', 'tmuxEnv', 'promptFingerprints', 'inputBoxState', 'createTmuxClient',
+    // backend（tmux|herdr 正交后端工厂）
+    'createAgentBackend',
     // pty
     'createPty', 'tmuxAttachCommand', 'attachTmuxPty', 'ptyAvailable', 'DEFAULT_PTY_COLS', 'DEFAULT_PTY_ROWS',
     // router

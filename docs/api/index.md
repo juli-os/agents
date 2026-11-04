@@ -8,6 +8,7 @@
 
 - [AcpDeps](interfaces/AcpDeps.md)
 - [AcpExecutor](interfaces/AcpExecutor.md)
+- [AgentBackend](interfaces/AgentBackend.md)
 - [Assessment](interfaces/Assessment.md)
 - [Assessor](interfaces/Assessor.md)
 - [CallModeConfig](interfaces/CallModeConfig.md)
@@ -54,12 +55,14 @@
 
 ## Type Aliases
 
+- [AgentBackendKind](type-aliases/AgentBackendKind.md)
 - [CallMode](type-aliases/CallMode.md)
 - [CallPhase](type-aliases/CallPhase.md)
 - [ContextAction](type-aliases/ContextAction.md)
 - [Emit](type-aliases/Emit.md)
 - [HookType](type-aliases/HookType.md)
 - [OrchestratorEvent](type-aliases/OrchestratorEvent.md)
+- [TerminalKey](type-aliases/TerminalKey.md)
 
 ## Variables
 
@@ -76,6 +79,7 @@
 
 - [attachTmuxPty](functions/attachTmuxPty.md)
 - [createAcpExecutor](functions/createAcpExecutor.md)
+- [createAgentBackend](functions/createAgentBackend.md)
 - [createCommandRegistry](functions/createCommandRegistry.md)
 - [createHookManager](functions/createHookManager.md)
 - [createOrchestrator](functions/createOrchestrator.md)

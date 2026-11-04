@@ -8,7 +8,7 @@
 
 > **createTmuxClient**(`opts?`): [`TmuxClient`](../interfaces/TmuxClient.md)
 
-Defined in: [platform/agents/tmux.ts:144](https://github.com/juli-os/agents/blob/main/src/platform/agents/tmux.ts#L144)
+Defined in: [platform/agents/tmux.ts:161](https://github.com/juli-os/agents/blob/main/src/platform/agents/tmux.ts#L161)
 
 ## Parameters
 

@@ -158,7 +158,7 @@ export const createProvisioningDispatch = (opts: ProvisioningOpts) => {
         if (!trustAccepted) {
           trustAccepted = true; // 一个等待周期只接受一次，防连按
           opts.log?.(`dispatch ${session}: 信任对话框——Down+Enter 接受`);
-          const down = await opts.tmux.exec(['send-keys', '-t', session, 'Down']);
+          const down = await opts.tmux.sendKey(session, 'Down');
           if (!down.ok) return down;
           const acc = await opts.tmux.sendText(session, '');
           if (!acc.ok) return acc;

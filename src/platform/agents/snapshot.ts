@@ -67,8 +67,8 @@ export const takeSnapshot = async (deps: SnapshotDeps): Promise<Result<Snapshot,
   const seen = new Set<string>();
   for (const name of listed) {
     seen.add(name);
-    const workDir = await paneField(deps.tmux, name, '#{pane_current_path}');
-    const cmd = await paneField(deps.tmux, name, '#{pane_current_command}');
+    const workDir = await deps.tmux.panePathOf(name);
+    const cmd = await deps.tmux.foregroundCommandOf(name);
     const prevS = prevByName.get(name);
     const agentNow = hadAgentOf(cmd);
     sessions.push({
@@ -91,12 +91,6 @@ export const takeSnapshot = async (deps: SnapshotDeps): Promise<Result<Snapshot,
     return { ok: false, error: saved.error };
   }
   return ok(snap);
-};
-
-/** 按 display-message 模板取单 pane 字段（工作区/命令共用），失败回空串。 */
-const paneField = async (tmux: TmuxClient, session: string, format: string): Promise<string> => {
-  const res = await tmux.exec(['display-message', '-p', '-t', session, format]);
-  return res.ok ? res.value.trim() : '';
 };
 
 /** 从快照恢复：会话不在 → 按快照重建（工作区 + agent 命令）；在但 agent 死 →

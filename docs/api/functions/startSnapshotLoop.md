@@ -8,7 +8,7 @@
 
 > **startSnapshotLoop**(`deps`, `intervalMs?`): () => `void`
 
-Defined in: [platform/agents/snapshot.ts:129](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L129)
+Defined in: [platform/agents/snapshot.ts:123](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L123)
 
 周期快照循环（对齐 Go StartSnapshotLoop）。
 

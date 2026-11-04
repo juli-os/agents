@@ -1,11 +1,17 @@
 // L0 execution-substrate facade — the only public surface of this layer.
-// Complete export surface of the fourteen source modules. Dependency rule:
+// Complete export surface of the sixteen source modules. Dependency rule:
 // agents may depend on platform/shared and its own contracts/ports (type-only);
 // consumers must never bypass this facade.
 export {
   resolveTmuxBin, TMUX_BIN, tmuxEnv, promptFingerprints, inputBoxState, createTmuxClient,
-  type TmuxSessionInfo, type SubmitStats, type TmuxClient,
+  type TmuxSessionInfo, type SubmitStats, type TmuxClient, type TerminalKey,
 } from './platform/agents/tmux.ts';
+// 2026-11-04 herdr 下沉：终端基底（tmux|herdr）的正交后端工厂——引擎消费
+// 面，聚合 terminal/hookSpecs/listSync/attach/bootCommand/applyEnv 六件
+// 「随后端变化的事」，差异不出本包。
+export {
+  createAgentBackend, type AgentBackend, type AgentBackendKind,
+} from './platform/agents/backend.ts';
 export {
   createPty, tmuxAttachCommand, attachTmuxPty, ptyAvailable,
   DEFAULT_PTY_COLS, DEFAULT_PTY_ROWS, type PtyOpts, type PtySession,
