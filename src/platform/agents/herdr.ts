@@ -158,6 +158,41 @@ export interface HerdrClientOpts {
 export interface HerdrClient extends TmuxClient {
   readonly backend: 'herdr';
   readonly session: string;
+  /** herdr 原生托管 agent 启动（`herdr agent start` 的 socket 形态，0.9.5+）：
+   * 在会话 pane 里以 herdr 管理生命周期的方式拉起一个交互 agent（如
+   * kind='zcode'）。与 sendText 手敲命令的差别：herdr 侧登记 managed
+   * agent（名字/种类/状态机/恢复语义），`herdr agent list/get/wait` 全链
+   * 可观测——「herdr 启动 pi agent」的同款路径。要求 pane 是裸 shell
+   * （本 client 的 newSession 产物正是），已在跑 agent 的 pane 会得到
+   * herdr 侧 target_busy 报错。 */
+  startManagedAgent(session: string, opts: HerdrManagedAgentStart): Promise<Result<HerdrAgentInfo, Error>>;
+}
+
+/** agent.start 入参（herdr AgentStartParams 直译；name 规则=小写字母开头、
+ * 仅小写/数字/'-'/'_'、≤32 字符，kind 必须 herdr detect 名单内——两样都由
+ * herdr 侧校验，这里不重复实现，错误原文透传可诊断）。 */
+export interface HerdrManagedAgentStart {
+  readonly name: string;
+  readonly kind: string;
+  /** 透传给 agent CLI 的参数（如 zcode 的 --cwd/--resume）。 */
+  readonly args?: readonly string[];
+  /** 启动就绪等待预算毫秒（>3000 且 ≤300000，缺省 herdr 30s）。 */
+  readonly timeoutMs?: number;
+  /** pane shell 落回提示符的等待预算毫秒（新建 workspace 的 zsh 还在跑
+   * 启动文件时，herdr 侧 shell-idle 检查会先回 agent_pane_busy——本层按
+   * 此预算重试；缺省 15s）。 */
+  readonly shellSettleMs?: number;
+}
+
+/** agent.start 应答的 agent 节（herdr snake_case 原样，零翻译）。 */
+export interface HerdrAgentInfo {
+  readonly name?: string;
+  readonly agent?: string;
+  readonly agent_status?: string;
+  readonly pane_id?: string;
+  readonly interactive_ready?: boolean;
+  readonly terminal_title?: string;
+  readonly workspace_id?: string;
 }
 
 interface PaneRef {
@@ -322,9 +357,23 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
   const sendTextImpl = async (session: string, text: string): Promise<Result<void, Error>> => {
     // 与 L0 同款：>10 字符走 bracketed-paste 包裹（整段原子进输入行），短文本
     // 直发。herdr pane.send_text 是字面字节写，包裹标记由本层自带。
-    const body = text.length > 10 ? `\x1b[200~${text}\x1b[201~` : text;
+    const wrapped = text.length > 10;
+    const body = wrapped ? `\x1b[200~${text}\x1b[201~` : text;
     const sent = await sendRaw(session, body);
     if (!sent.ok) return sent;
+    if (wrapped) {
+      // paste 落地门（2026-11-06 zcode 实测）：ZCode 的 Ink textarea 异步提交
+      // paste 内容，紧跟的 Enter 会赶在提交前把粘贴整段丢掉（claude/pi 无此
+      // 问题——它们的首轮轮询即过，零额外延迟）。有界轮询指纹进框再补
+      // Enter；1.5s 内未落地也放行（丢粘贴由确认循环的重粘贴分支兜底）。
+      const { tail } = promptFingerprints(text);
+      const landDeadline = Date.now() + 1500;
+      while (tail !== '' && Date.now() < landDeadline) {
+        const cap = await capture(session, 40);
+        if (cap.ok && submitState(cap.value, tail) !== 'absent') break;
+        await sleepP(120);
+      }
+    }
     return sendEnter(session);
   };
 
@@ -339,6 +388,32 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
       : '');
   };
 
+  /** 提交判定（zcode 2026-11-06 实测校准）：claude 流派提交后输入框重置成空
+   * ❯ 行（tmux 侧 inputBoxState 的原口径）；ZCode 类 Ink TUI 不重置——「已
+   * 提交」的可观测信号是指纹从输入框（最后一个 ╭ 起的圆角框区，输入框恒在
+   * 屏幕最底）上移进 transcript。两流派按序判定。 */
+  const submitState = (pane: string, tail: string): 'cleared' | 'in-box' | 'absent' => {
+    if (tail === '') return 'cleared';
+    const at = pane.lastIndexOf(tail);
+    if (at >= 0) {
+      const below = pane.slice(at).split('\n').slice(1);
+      if (below.some((l) => /^\s*❯\s*$/.test(l))) return 'cleared';
+    }
+    const lines = pane.split('\n');
+    let boxStart = -1;
+    for (let i = lines.length - 1; i >= 0; i -= 1) {
+      if (/^\s*╭/.test(lines[i] ?? '')) {
+        boxStart = i;
+        break;
+      }
+    }
+    if (boxStart >= 0) {
+      const inBox = lines.slice(boxStart).some((l) => l.includes(tail));
+      return inBox ? 'in-box' : (at >= 0 ? 'cleared' : 'absent');
+    }
+    return at === -1 ? 'absent' : 'in-box';
+  };
+
   const sendTextConfirmed = async (session: string, text: string): Promise<Result<SubmitStats, Error>> => {
     const started = Date.now();
     const sent = await sendTextImpl(session, text);
@@ -351,9 +426,11 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
     let repasted = false;
     for (;;) {
       await sleepP(280);
-      const cap = await capture(session, 10);
+      // 40 行窗：ZCode 的 prompt 回显上移后常落出 10 行窗（实测），浅窗会把
+      // 已提交误判成 absent、触发不必要的重粘贴。
+      const cap = await capture(session, 40);
       if (!cap.ok) return cap;
-      const state = inputBoxState(cap.value, tail);
+      const state = submitState(cap.value, tail);
       if (state === 'cleared') {
         return ok({ enters, repasted, elapsedMs: Date.now() - started });
       }
@@ -396,9 +473,9 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
     let repasted = false;
     for (;;) {
       await sleepP(280);
-      const cap = await capture(session, 10);
+      const cap = await capture(session, 40);
       if (!cap.ok) return cap;
-      const state = inputBoxState(cap.value, tail);
+      const state = submitState(cap.value, tail);
       if (state === 'cleared') {
         return ok({ enters, repasted, finalState: 'cleared', elapsedMs: Date.now() - started });
       }
@@ -568,6 +645,55 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
       const sent = await request('pane.send_keys', { pane_id: ref.value.paneId, keys: ['ctrl+c'] });
       return sent.ok ? ok(undefined) : err(wireError('pane.send_keys', sent.error));
     },
+    async startManagedAgent(session, opts) {
+      const ref = await resolve(session);
+      if (!ref.ok) return ref;
+      const params: Record<string, unknown> = {
+        name: opts.name,
+        kind: opts.kind,
+        pane_id: ref.value.paneId,
+      };
+      if (opts.args !== undefined && opts.args.length > 0) params['args'] = [...opts.args];
+      if (opts.timeoutMs !== undefined) params['timeout_ms'] = opts.timeoutMs;
+      // 新建 workspace 的 shell 还在跑启动文件（zprofile/zshrc）时，herdr 的
+      // shell-idle 前置检查回 agent_pane_busy——按 shellSettleMs 预算重试，
+      // 与就绪派发的 provision 语义同向。其他错误（invalid_name/unsupported_
+      // kind/target_busy 真占位）不重试，原文透传。
+      const settleDeadline = Date.now() + (opts.shellSettleMs ?? 15_000);
+      let started: HerdrAgentInfo | undefined;
+      for (;;) {
+        const r = await request('agent.start', params);
+        if (r.ok) {
+          started = r.value['agent'] as HerdrAgentInfo | undefined;
+          if (started === undefined) {
+            return err(new Error('herdr agent.start 响应缺 agent（协议漂移，需核对 herdr 版本）'));
+          }
+          break;
+        }
+        if (!r.error.message.includes('agent_pane_busy') || Date.now() >= settleDeadline) {
+          return err(wireError('agent.start', r.error));
+        }
+        await sleepP(500);
+      }
+      // raw agent.start 返回的是提交瞬间快照（interactive_ready 尚未落位）；
+      // herdr CLI 的 start 命令同款收尾——轮询 agent.get 到 kind 就绪。
+      // 到期不判死（agent 已起，杀之可惜）：返回最后快照，interactive_ready
+      // 字段留给调用方裁断；agent 半路消失（name lost）才是硬错误。
+      const readyDeadline = Date.now() + (opts.timeoutMs ?? 30_000);
+      let info = started;
+      for (;;) {
+        if (info.agent === opts.kind && info.interactive_ready === true) return ok(info);
+        if (Date.now() >= readyDeadline) return ok(info);
+        await sleepP(500);
+        const g = await request('agent.get', { target: opts.name });
+        if (g.ok) {
+          const next = g.value['agent'] as HerdrAgentInfo | undefined;
+          if (next !== undefined) info = next;
+        } else if (!g.error.message.includes('not_found')) {
+          return err(wireError('agent.get', g.error));
+        }
+      }
+    },
     socketPath: undefined,
   };
 };
@@ -678,6 +804,7 @@ export const startFakeHerdr = async (socketPath: string): Promise<FakeHerdr> => 
   const workspaces: { workspace_id: string; label: string; focused: boolean }[] = [];
   const panes: { pane_id: string; workspace_id: string; label: string; cwd: string; foreground: string }[] = [];
   const tabs: { tab_id: string; workspace_id: string }[] = [];
+  const managedAgents: { pane_id: string; name: string; kind: string }[] = [];
   const server = createServer((sock) => {
     let buf = '';
     sock.on('data', (chunk) => {
@@ -763,6 +890,43 @@ export const startFakeHerdr = async (socketPath: string): Promise<FakeHerdr> => 
         return panes.some((p) => p.pane_id === req.params['pane_id'])
           ? okR({})
           : errR('not_found', 'pane not found');
+      case 'agent.start': {
+        const pane = panes.find((p) => p.pane_id === req.params['pane_id']);
+        if (!pane) return errR('not_found', 'pane not found');
+        if (managedAgents.some((a) => a.pane_id === pane.pane_id)) {
+          return errR('target_busy', 'agent already running in pane');
+        }
+        const name = String(req.params['name'] ?? '');
+        const kind = String(req.params['kind'] ?? '');
+        managedAgents.push({ pane_id: pane.pane_id, name, kind });
+        // 托管启动后前台进程即 agent 可执行名（与真实 herdr 的 managed 归因同形）。
+        pane.foreground = kind;
+        // raw agent.start = 提交瞬间快照（就绪未落位）——与真实 herdr 同形，
+        // 客户端的就绪轮询走 agent.get。
+        return okR({
+          agent: {
+            name,
+            agent: kind,
+            agent_status: 'unknown',
+            pane_id: pane.pane_id,
+            interactive_ready: false,
+          },
+        });
+      }
+      case 'agent.get': {
+        const target = String(req.params['target'] ?? '');
+        const rec = managedAgents.find((a) => a.name === target || a.pane_id === target);
+        if (!rec) return errR('not_found', 'agent not found');
+        return okR({
+          agent: {
+            name: rec.name,
+            agent: rec.kind,
+            agent_status: 'idle',
+            pane_id: rec.pane_id,
+            interactive_ready: true,
+          },
+        });
+      }
       case 'pane.read': {
         const pane = panes.find((p) => p.pane_id === req.params['pane_id']);
         if (!pane) return errR('not_found', 'pane not found');

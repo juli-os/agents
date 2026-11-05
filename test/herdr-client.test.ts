@@ -188,4 +188,41 @@ describe('createHerdrClient（fake server 契约）', () => {
     const miss = await c.sendText('no-such', 'text');
     assert.equal(miss.ok, false);
   });
+
+  it('startManagedAgent：agent.start(name/kind/pane_id)，可选字段缺省不进 params', async () => {
+    const c = client();
+    await c.newSession('juli-zcode', '/tmp/zc');
+    fake.requests.length = 0;
+    const r = await c.startManagedAgent('juli-zcode', { name: 'z-juli-zcode', kind: 'zcode' });
+    assert.equal(r.ok, true);
+    assert.equal(r.value.agent, 'zcode');
+    assert.equal(r.value.agent_status, 'idle');
+    assert.equal(r.value.interactive_ready, true);
+    const call = fake.requests.find((x) => x.method === 'agent.start')!;
+    assert.equal(call.params['name'], 'z-juli-zcode');
+    assert.equal(call.params['kind'], 'zcode');
+    assert.equal('args' in call.params, false);   // 缺省不占位
+    assert.equal('timeout_ms' in call.params, false);
+    // 托管归因：agent 起来后前台进程名 = kind
+    assert.equal(await c.foregroundCommandOf('juli-zcode'), 'zcode');
+  });
+
+  it('startManagedAgent：args/timeout 透传 + 已占 pane 的 herdr 报错透传', async () => {
+    const c = client();
+    const r = await c.startManagedAgent('juli-zcode', {
+      name: 'again', kind: 'zcode', args: ['--cwd', '/tmp'], timeoutMs: 60_000,
+    });
+    // fake server 对已托管 pane 回 target_busy（真实 herdr 同语义）
+    assert.equal(r.ok, false);
+    assert.ok(r.error.message.includes('target_busy'));
+    // 换一个新会话验证字段透传
+    await c.newSession('juli-z2', '/tmp');
+    const ok2 = await c.startManagedAgent('juli-z2', {
+      name: 'z2', kind: 'pi', args: ['--resume', 'x'], timeoutMs: 45_000,
+    });
+    assert.equal(ok2.ok, true);
+    const call = fake.requests.filter((x) => x.method === 'agent.start').at(-1)!;
+    assert.deepEqual(call.params['args'], ['--resume', 'x']);
+    assert.equal(call.params['timeout_ms'], 45_000);
+  });
 });

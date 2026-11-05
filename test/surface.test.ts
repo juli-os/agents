@@ -11,6 +11,8 @@ test('facade value-export surface matches the explicit snapshot list', () => {
     'resolveTmuxBin', 'TMUX_BIN', 'tmuxEnv', 'promptFingerprints', 'inputBoxState', 'createTmuxClient',
     // backend（tmux|herdr 正交后端工厂）
     'createAgentBackend',
+    // herdr 后端客户端（CLI/嵌入式测试直连面）
+    'createHerdrClient', 'herdrSocketPath', 'HERDR_BIN',
     // pty
     'createPty', 'tmuxAttachCommand', 'attachTmuxPty', 'ptyAvailable', 'DEFAULT_PTY_COLS', 'DEFAULT_PTY_ROWS',
     // router

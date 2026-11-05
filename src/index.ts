@@ -12,6 +12,12 @@ export {
 export {
   createAgentBackend, type AgentBackend, type AgentBackendKind,
 } from './platform/agents/backend.ts';
+// herdr 后端客户端（backend.ts 的实现件，2026-11-06 起 CLI/嵌入式测试直连面：
+// startManagedAgent = 「herdr 启动 pi/zcode agent」的原生托管路径）。
+export {
+  createHerdrClient, herdrSocketPath, HERDR_BIN,
+  type HerdrClient, type HerdrManagedAgentStart, type HerdrAgentInfo,
+} from './platform/agents/herdr.ts';
 export {
   createPty, tmuxAttachCommand, attachTmuxPty, ptyAvailable,
   DEFAULT_PTY_COLS, DEFAULT_PTY_ROWS, type PtyOpts, type PtySession,

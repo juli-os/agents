@@ -31,6 +31,42 @@ describe('herdr 真机冒烟（一次性 namespace）', { skip: live ? false : '
     } catch { /* 已停/未起 */ }
   });
 
+  // zcode 托管启动冒烟：默认跳过（消耗模型配额 + 依赖 zcode/herdr 双 bin 在位），
+  // JULI_HERDR_ZCODE_LIVE=1 显式开启——「herdr 启动 pi agent」同款路径的 zcode 版。
+  const zcodeOk = (() => {
+    try {
+      execFileSync('zcode', ['--version'], { timeout: 5000 });
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  const zcodeLive = live && zcodeOk && process.env['JULI_HERDR_ZCODE_LIVE'] === '1';
+
+  it('agent.start kind=zcode（herdr 原生托管启动 + 前台归因）', { timeout: 90_000, skip: zcodeLive ? false : '需要 JULI_HERDR_ZCODE_LIVE=1 且 zcode/herdr 双 bin' }, async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'herdr-zcode-live-'));
+    const client = createHerdrClient({ session: ns, log: () => undefined });
+    try {
+      await client.newSession('juli-zcode-live', dir);
+      const started = await client.startManagedAgent('juli-zcode-live', {
+        name: 'zlive', kind: 'zcode', timeoutMs: 80_000,
+      });
+      assert.equal(started.ok, true, started.ok ? '' : started.error.message);
+      assert.equal(started.value.agent, 'zcode');
+      assert.equal(started.value.interactive_ready, true);
+      // 托管归因：前台进程名落成 zcode（可能要等 TUI 接管前台，轮询兜底）
+      let fg = '';
+      for (let i = 0; i < 30 && fg.trim() !== 'zcode'; i++) {
+        fg = await client.foregroundCommandOf('juli-zcode-live');
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      assert.equal(fg.trim(), 'zcode');
+    } finally {
+      await client.killSession('juli-zcode-live');
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('server 自动拉起 + 创建舞步 + env 注入 + 发送/抓屏 + 杀会话', { timeout: 30_000 }, async () => {
     const dir = mkdtempSync(join(tmpdir(), 'herdr-live-'));
     const client = createHerdrClient({ session: ns, log: () => undefined });
