@@ -5,13 +5,16 @@
 // （createProvisioningDispatch / probePane / snapshot / hooks）零改动可跑。
 // 消费入口 = backend.ts 的 createAgentBackend（tmux|herdr 正交后端工厂）。
 //
-// 映射模型（workspace 抽象的利用）：
+// 映射模型（v2，2026-11-06：workspace 让位给 tenant）：
 //   - herdr 命名 session namespace（`herdr --session <ns>`，config
 //     herdr_session，默认 'juli'）≈ tmux 专属 socket 的隔离位。
-//   - 一个 juli agent 会话 = 一个 herdr workspace（label=会话名），cwd 即
-//     声明 cwd；每个 workspace 建一个 'agent' tab，其根 pane 即派发目标。
-//   - pane label `juli:<会话名>` 是跨重启的稳定寻址键（引擎重启丢内存缓存
-//     后靠 pane.list 扫描找回）。
+//   - workspace = tenant（租户预留位，默认 label='juli'；多租户落地时一
+//     客户一 workspace）；tab = agent 会话（label=会话名，cwd/env 随 tab）；
+//     pane = 终端本体。
+//   - pane label `juli:<会话名>` 是跨重启的稳定寻址键（2026-11-06 实测
+//     tab/pane label 均随 server 重启持久；引擎重启丢内存缓存后靠
+//     pane.list 扫描找回，tab label 匹配为第二兜底，旧 workspace=会话
+//     形状仅迁移窗口由 legacy 兜底兼容）。
 //
 // env 注入的诚实边界（0.9.5 实测，2026-10-31）：
 //   - workspace.create / pane.split / layout.apply 的 env 参数不进 shell；
@@ -136,6 +139,11 @@ export const herdrRequest = (
 export interface HerdrClientOpts {
   /** 命名 session namespace（默认 'juli'）。 */
   readonly session?: string;
+  /** 租户 workspace 的 label（默认 'juli'）：映射模型 v2（2026-11-06）——
+   * workspace=tenant（多租户预留位，今天单租户占一席）、tab=agent 会话
+   * （label=会话名）、pane=终端本体。旧「workspace=会话」形状仅在迁移
+   * 窗口被 resolve/kill/list 的 legacy 兜底兼容。 */
+  readonly tenant?: string;
   /** socket 路径覆盖（缺省 = 命名 session 的固定布局；测试指向 fake server）。 */
   readonly socketPath?: string;
   /** 新建 workspace 时随 tab.create 注入的 env（runtime 的 ai 段热注入面）。 */
@@ -206,6 +214,7 @@ let reqSeq = 0;
 
 export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
   const ns = opts.session ?? 'juli';
+  const tenant = opts.tenant ?? ns;
   const socketPath = opts.socketPath ?? herdrSocketPath(ns);
   const submitConfirmMs = opts.submitConfirmMs ?? 20_000;
   const queuedConfirmMs = opts.queuedConfirmMs ?? 8_000;
@@ -284,6 +293,12 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
     readonly cwd?: string;
     readonly label?: string;
   }
+  interface TabRec {
+    readonly tab_id: string;
+    readonly workspace_id: string;
+    readonly label?: string;
+    readonly focused?: boolean;
+  }
 
   const listWorkspaces = async (): Promise<Result<readonly WorkspaceRec[], Error>> => {
     const r = await request('workspace.list', {});
@@ -301,8 +316,25 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
     return ok(list as PaneRec[]);
   };
 
-  /** 会话名 → pane 寻址：内存缓存 → pane label 扫描（跨重启稳定）→
-   * workspace label 兜底取其首个 pane（老 workspace 未打 label 时）。 */
+  const listTabs = async (): Promise<Result<readonly TabRec[], Error>> => {
+    const r = await request('tab.list', {});
+    if (!r.ok) return err(wireError('tab.list', r.error));
+    const list = r.value['tabs'];
+    if (!Array.isArray(list)) return ok([]);
+    return ok(list as TabRec[]);
+  };
+
+  /** 租户 workspace 的 id（内存缓存 + 按需扫描；未建返回 undefined）。 */
+  const tenantWorkspaceId = async (): Promise<Result<string | undefined, Error>> => {
+    const wl = await listWorkspaces();
+    if (!wl.ok) return err(wl.error);
+    return ok(wl.value.find((w) => w.label === tenant)?.workspace_id);
+  };
+
+  /** 会话名 → pane 寻址（v2 映射：tab=会话）：内存缓存 → pane label 扫描
+   * （跨重启稳定，2026-11-06 实测 label 随 server 重启持久）→ 租户 workspace
+   * 内 tab label 匹配 → legacy 兜底（workspace label=会话名的旧形状，仅迁移
+   * 窗口存在）。 */
   const resolve = async (session: string): Promise<Result<PaneRef, Error>> => {
     const cached = panes.get(session);
     if (cached) return ok(cached);
@@ -315,10 +347,25 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
       panes.set(session, ref);
       return ok(ref);
     }
+    const tw = await tenantWorkspaceId();
+    if (!tw.ok) return err(tw.error);
+    if (tw.value !== undefined) {
+      const tl = await listTabs();
+      if (!tl.ok) return err(tl.error);
+      const tab = tl.value.find((t) => t.workspace_id === tw.value && t.label === session);
+      if (tab !== undefined) {
+        const pane = pl.value.find((p) => p.tab_id === tab.tab_id);
+        if (pane !== undefined) {
+          const ref = { workspaceId: tw.value, paneId: pane.pane_id };
+          panes.set(session, ref);
+          return ok(ref);
+        }
+      }
+    }
     const wl = await listWorkspaces();
     if (!wl.ok) return err(wl.error);
     const ws = wl.value.find((w) => w.label === session);
-    if (!ws) return err(new Error(`herdr 会话 "${session}" 不存在（workspace 未建）`));
+    if (!ws) return err(new Error(`herdr 会话 "${session}" 不存在（租户 tab 未建）`));
     const pane = pl.value.find((p) => p.workspace_id === ws.workspace_id);
     if (!pane) return err(new Error(`herdr 会话 "${session}" 的 workspace 无可用 pane`));
     const ref = { workspaceId: ws.workspace_id, paneId: pane.pane_id };
@@ -501,17 +548,28 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
   };
 
   const killSession = async (session: string): Promise<Result<void, Error>> => {
-    const cached = panes.get(session);
-    let workspaceId = cached?.workspaceId;
-    if (workspaceId === undefined) {
-      const wl = await listWorkspaces();
-      if (!wl.ok) return err(wl.error);
-      workspaceId = wl.value.find((w) => w.label === session)?.workspace_id;
+    // v2 主路：租户 workspace 下的 tab（label=会话名）。
+    const tw = await tenantWorkspaceId();
+    if (!tw.ok) return err(tw.error);
+    if (tw.value !== undefined) {
+      const tl = await listTabs();
+      if (!tl.ok) return err(tl.error);
+      const tab = tl.value.find((t) => t.workspace_id === tw.value && t.label === session);
+      if (tab !== undefined) {
+        const closed = await request('tab.close', { tab_id: tab.tab_id });
+        if (!closed.ok) return err(wireError('tab.close', closed.error));
+        panes.delete(session);
+        return ok(undefined);
+      }
     }
-    if (workspaceId === undefined) {
+    // legacy 兜底：旧形状（workspace label=会话名）——迁移窗口兼容。
+    const wl = await listWorkspaces();
+    if (!wl.ok) return err(wl.error);
+    const ws = wl.value.find((w) => w.label === session);
+    if (ws === undefined) {
       return err(new Error(`herdr 会话 "${session}" 不存在`));
     }
-    const closed = await request('workspace.close', { workspace_id: workspaceId });
+    const closed = await request('workspace.close', { workspace_id: ws.workspace_id });
     if (!closed.ok) return err(wireError('workspace.close', closed.error));
     panes.delete(session);
     return ok(undefined);
@@ -520,16 +578,15 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
   const newSession = async (session: string, cwd?: string): Promise<Result<void, Error>> => {
     const up = await ensureServer();
     if (!up.ok) return up;
-    // 已存在的 workspace（重启恢复/半建残留）：补齐 agent tab 与 pane label，
-    // 不重复建 workspace（幂等自愈，与就绪派发的 provision 语义对齐）。
-    const existing = await listWorkspaces();
-    if (!existing.ok) return err(existing.error);
-    const ws = existing.value.find((w) => w.label === session);
-    let workspaceId: string;
-    let defaultTabId: string | undefined;
-    if (ws === undefined) {
+    // 租户 workspace 幂等复用（v2：workspace=tenant）。⚠顺序锚（2026-11-06
+    // tabv2 实测）：先建会话 tab、最后关默认 tab——先关默认 tab 会把
+    // workspace 清成零 tab，herdr 连带删掉整个 workspace（后续 tab.create
+    // 报 workspace_not_found）。
+    let workspaceId = await tenantWorkspaceId().then((r) => (r.ok ? r.value : undefined));
+    let freshDefaultTabId: string | undefined;
+    if (workspaceId === undefined) {
       const created = await request('workspace.create', {
-        label: session, cwd: cwd ?? null, focus: false,
+        label: tenant, cwd: cwd ?? null, focus: false,
       });
       if (!created.ok) return err(wireError('workspace.create', created.error));
       const w = created.value['workspace'] as { workspace_id: string } | undefined;
@@ -538,13 +595,30 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
         return err(new Error('herdr workspace.create 响应缺 workspace/tab（协议漂移，需核对 herdr 版本）'));
       }
       workspaceId = w.workspace_id;
-      defaultTabId = t.tab_id;
-    } else {
-      workspaceId = ws.workspace_id;
+      freshDefaultTabId = t.tab_id;
     }
-    // agent tab：env 注入唯一验证生效的路径（见文件头实测记录）。
+    // 会话 tab 幂等（重启恢复/半建残留）：按 label 找到即复用（pane 补打
+    // label、缓存重建），不盲目新建——重复 warmup 不再堆出双份 tab。
+    const tl = await listTabs();
+    if (!tl.ok) return err(tl.error);
+    const existingTab = tl.value.find((t) => t.workspace_id === workspaceId && t.label === session);
+    if (existingTab !== undefined) {
+      const pl = await listPanes();
+      if (!pl.ok) return err(pl.error);
+      const pane = pl.value.find((p) => p.tab_id === existingTab.tab_id);
+      if (pane === undefined) {
+        return err(new Error(`herdr 会话 "${session}" 的 tab 无可用 pane`));
+      }
+      if (pane.label !== paneLabelOf(session)) {
+        const renamed = await request('pane.rename', { pane_id: pane.pane_id, label: paneLabelOf(session) });
+        if (!renamed.ok) return err(wireError('pane.rename', renamed.error));
+      }
+      panes.set(session, { workspaceId: workspaceId!, paneId: pane.pane_id });
+      return ok(undefined);
+    }
+    // 会话 tab：env 注入唯一验证生效的路径（见文件头实测记录）。
     const tab = await request('tab.create', {
-      workspace_id: workspaceId, label: 'agent', cwd: cwd ?? null, env: envFor(session), focus: false,
+      workspace_id: workspaceId, label: session, cwd: cwd ?? null, env: envFor(session), focus: false,
     });
     if (!tab.ok) return err(wireError('tab.create', tab.error));
     const pane = tab.value['root_pane'] as { pane_id: string } | undefined;
@@ -554,12 +628,12 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
     // pane label = 跨重启稳定寻址键。
     const renamed = await request('pane.rename', { pane_id: pane.pane_id, label: paneLabelOf(session) });
     if (!renamed.ok) return err(wireError('pane.rename', renamed.error));
-    panes.set(session, { workspaceId, paneId: pane.pane_id });
-    // 新建路径里 workspace.create 的默认 tab 是无 env 的裸 shell——关掉，
-    // workspace 只留带 env 的 agent tab（恢复路径的 defaultTabId 为 undefined）。
-    if (defaultTabId !== undefined) {
-      const closed = await request('tab.close', { tab_id: defaultTabId });
-      if (!closed.ok) opts.log?.(`[herdr] ${session} 默认 tab 关闭失败（不影响派发，pane 已就位）: ${closed.error.message.slice(0, 80)}`);
+    panes.set(session, { workspaceId: workspaceId!, paneId: pane.pane_id });
+    // 最后关默认 tab：窗口内只留带 env 的会话 tab（workspace 已有≥1 tab，
+    // 关闭不再触发空删）。
+    if (freshDefaultTabId !== undefined) {
+      const closed = await request('tab.close', { tab_id: freshDefaultTabId });
+      if (!closed.ok) opts.log?.(`[herdr] 租户 ${tenant} 默认 tab 关闭失败（不影响使用）: ${closed.error.message.slice(0, 80)}`);
     }
     return ok(undefined);
   };
@@ -574,14 +648,36 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
     const pl = await listPanes();
     if (!pl.ok) return err(pl.error);
     const rows: TmuxSessionInfo[] = [];
+    // v2 主路：租户 workspace 的会话 tab（label=会话名；未打 label 的杂散
+    // tab——如默认 '1'——不算会话）。
+    const tenantWs = wl.value.find((w) => w.label === tenant);
+    if (tenantWs !== undefined) {
+      const tl = await listTabs();
+      if (!tl.ok) return err(tl.error);
+      for (const tab of tl.value) {
+        if (tab.workspace_id !== tenantWs.workspace_id) continue;
+        const name = (tab.label ?? '').trim();
+        if (name === '') continue;
+        const pane = pl.value.find((p) => p.tab_id === tab.tab_id);
+        if (pane === undefined) continue;
+        rows.push({
+          name,
+          // herdr 无 client attach 态可查：以 server 侧 focus 态作近似（TUI 谁在
+          // 看它就亮谁；无客户端时恒 false——与「未附着」语义同形）。
+          attached: tab.focused === true,
+          path: pane.cwd ?? '',
+          cmd: await foregroundOf(pane.pane_id),
+        });
+      }
+      return ok(rows);
+    }
+    // legacy 兜底（迁移窗口）：旧形状 workspace=会话。
     for (const ws of wl.value) {
       const pane = pl.value.find((p) => p.label === paneLabelOf(ws.label))
         ?? pl.value.find((p) => p.workspace_id === ws.workspace_id);
       if (pane === undefined) continue;
       rows.push({
         name: ws.label,
-        // herdr 无 client attach 态可查：以 server 侧 focus 态作近似（TUI 谁在
-        // 看它就亮谁；无客户端时恒 false——与「未附着」语义同形）。
         attached: ws.focused === true,
         path: pane.cwd ?? '',
         cmd: await foregroundOf(pane.pane_id),
@@ -624,13 +720,24 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
       return new Map<string, number>();
     },
     async hasSession(session) {
+      // v2：租户 tab；租户未建/迁移窗口走 legacy workspace 名匹配。
       const wl = await listWorkspaces();
-      return wl.ok && wl.value.some((w) => w.label === session);
+      if (!wl.ok) return false;
+      const tw = wl.value.find((w) => w.label === tenant);
+      if (tw === undefined) return wl.value.some((w) => w.label === session);
+      const tl = await listTabs();
+      return tl.ok && tl.value.some((t) => t.workspace_id === tw.workspace_id && t.label === session);
     },
     async listSessions() {
       const wl = await listWorkspaces();
       if (!wl.ok) return [];
-      return wl.value.map((w) => w.label);
+      const tw = wl.value.find((w) => w.label === tenant);
+      if (tw === undefined) return wl.value.map((w) => w.label);
+      const tl = await listTabs();
+      if (!tl.ok) return [];
+      return tl.value
+        .filter((t) => t.workspace_id === tw.workspace_id && (t.label ?? '').trim() !== '')
+        .map((t) => (t.label ?? '').trim());
     },
     listSessionsDetailed,
     newSession,
@@ -802,8 +909,8 @@ export const startFakeHerdr = async (socketPath: string): Promise<FakeHerdr> => 
   let paneSeq = 0;
   let tabSeq = 0;
   const workspaces: { workspace_id: string; label: string; focused: boolean }[] = [];
-  const panes: { pane_id: string; workspace_id: string; label: string; cwd: string; foreground: string }[] = [];
-  const tabs: { tab_id: string; workspace_id: string }[] = [];
+  const panes: { pane_id: string; workspace_id: string; tab_id: string; label: string; cwd: string; foreground: string }[] = [];
+  const tabs: { tab_id: string; workspace_id: string; label: string }[] = [];
   const managedAgents: { pane_id: string; name: string; kind: string }[] = [];
   const server = createServer((sock) => {
     let buf = '';
@@ -832,9 +939,10 @@ export const startFakeHerdr = async (socketPath: string): Promise<FakeHerdr> => 
         paneSeq += 1;
         const wsId = `w${wsSeq}`;
         workspaces.push({ workspace_id: wsId, label: String(req.params['label'] ?? ''), focused: false });
-        tabs.push({ tab_id: `${wsId}:t${tabSeq}`, workspace_id: wsId });
+        const defTabId = `${wsId}:t${tabSeq}`;
+        tabs.push({ tab_id: defTabId, workspace_id: wsId, label: '1' });
         panes.push({
-          pane_id: `${wsId}:p${paneSeq}`, workspace_id: wsId, label: '',
+          pane_id: `${wsId}:p${paneSeq}`, workspace_id: wsId, tab_id: defTabId, label: '',
           cwd: String(req.params['cwd'] ?? ''), foreground: 'zsh',
         });
         return okR({
@@ -850,9 +958,9 @@ export const startFakeHerdr = async (socketPath: string): Promise<FakeHerdr> => 
         paneSeq += 1;
         const wsId = String(req.params['workspace_id'] ?? '');
         const tabId = `${wsId}:t${tabSeq}`;
-        tabs.push({ tab_id: tabId, workspace_id: wsId });
+        tabs.push({ tab_id: tabId, workspace_id: wsId, label: String(req.params['label'] ?? '') });
         panes.push({
-          pane_id: `${wsId}:p${paneSeq}`, workspace_id: wsId, label: '',
+          pane_id: `${wsId}:p${paneSeq}`, workspace_id: wsId, tab_id: tabId, label: '',
           cwd: String(req.params['cwd'] ?? ''), foreground: 'zsh',
         });
         return okR({ tab: { tab_id: tabId }, root_pane: { pane_id: `${wsId}:p${paneSeq}` } });
@@ -862,9 +970,15 @@ export const startFakeHerdr = async (socketPath: string): Promise<FakeHerdr> => 
         if (pane) pane.label = String(req.params['label'] ?? '');
         return pane ? okR({ pane }) : errR('not_found', 'pane not found');
       }
+      case 'tab.list':
+        return okR({ tabs });
       case 'tab.close': {
         const i = tabs.findIndex((t) => t.tab_id === req.params['tab_id']);
-        if (i >= 0) tabs.splice(i, 1);
+        if (i >= 0) {
+          const closedTab = tabs[i]!.tab_id;
+          tabs.splice(i, 1);
+          for (let j = panes.length - 1; j >= 0; j--) if (panes[j]!.tab_id === closedTab) panes.splice(j, 1);
+        }
         return okR({});
       }
       case 'workspace.close': {

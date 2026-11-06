@@ -42,38 +42,52 @@ describe('createHerdrClient（fake server 契约）', () => {
     queuedConfirmMs: 500,
   });
 
-  it('创建舞步：workspace(label=cwd) → tab(env 含 JULI_HERDR_SESSION) → pane.rename → 关默认 tab', async () => {
+  it('创建舞步 v2：租户 workspace 幂等建（关默认 tab）→ 会话 tab(label/env) → pane.rename', async () => {
     const c = client();
     const r = await c.newSession('juli-reply', '/tmp/somewhere');
     assert.equal(r.ok, true);
     const methods = fake.requests.map((x) => x.method);
-    assert.deepEqual(methods, ['ping', 'workspace.list', 'workspace.create', 'tab.create', 'pane.rename', 'tab.close']);
+    assert.deepEqual(methods, [
+      'ping', 'workspace.list', 'workspace.create', 'tab.list', 'tab.create', 'pane.rename', 'tab.close',
+    ]);
     const ws = fake.requests[2]!;
-    assert.equal(ws.params['label'], 'juli-reply');
-    assert.equal(ws.params['cwd'], '/tmp/somewhere');
-    assert.equal(ws.params['focus'], false);
-    const tab = fake.requests[3]!;
-    assert.equal(tab.params['label'], 'agent');
+    assert.equal(ws.params['label'], 'juli-test'); // 租户 workspace = opts.session 同名默认
+    assert.equal(fake.requests[6]!.method, 'tab.close'); // 默认 tab '1' 最后关
+    assert.equal(fake.requests[6]!.params['tab_id'], 'w1:t1');
+    const tab = fake.requests[4]!;
+    assert.equal(tab.params['workspace_id'], 'w1');
+    assert.equal(tab.params['label'], 'juli-reply'); // 会话 = tab label
     assert.equal((tab.params['env'] as Record<string, string>)['JULI_HERDR_SESSION'], 'juli-reply');
-    assert.equal(fake.requests[4]!.params['label'], paneLabelOf('juli-reply'));
-    // 默认 tab = workspace.create 返回的那个 tab_id
-    assert.equal(fake.requests[5]!.params['tab_id'], 'w1:t1');
+    assert.equal(fake.requests[5]!.params['label'], paneLabelOf('juli-reply'));
     assert.equal(c.session, 'juli-test');
     assert.equal(c.backend, 'herdr');
   });
 
-  it('hasSession/listSessions 以 workspace label 为键；setEnv 进注入面', async () => {
+  it('幂等复用：第二个会话不再建 workspace；同名 newSession 复用 tab 不堆叠', async () => {
+    const c = client();
+    await c.newSession('juli-dev', '/tmp/dev');
+    const before = fake.requests.filter((x) => x.method === 'workspace.create').length;
+    assert.equal(before, 1); // 租户 workspace 只建一次
+    await c.newSession('juli-dev', '/tmp/dev'); // 同名重复（重启 warmup 场景）
+    const dupTabs = fake.requests.filter(
+      (x) => x.method === 'tab.create' && (x.params['label'] as string) === 'juli-dev',
+    ).length;
+    assert.equal(dupTabs, 1);
+    // tab env 带上热注入的键
+    const e = await c.setEnv({ ANTHROPIC_API_KEY: 'sk-x' });
+    assert.equal(e.ok, true);
+    await c.newSession('juli-finance', '/tmp/fin');
+    const tab = fake.requests.filter((x) => x.method === 'tab.create').at(-1)!;
+    assert.equal((tab.params['env'] as Record<string, string>)['ANTHROPIC_API_KEY'], 'sk-x');
+    assert.equal((tab.params['env'] as Record<string, string>)['JULI_HERDR_SESSION'], 'juli-finance');
+  });
+
+  it('hasSession/listSessions 以租户 tab label 为键', async () => {
     const c = client();
     assert.equal(await c.hasSession('juli-reply'), true);
     assert.equal(await c.hasSession('nope'), false);
-    assert.deepEqual(await c.listSessions(), ['juli-reply']);
-    const e = await c.setEnv({ ANTHROPIC_API_KEY: 'sk-x' });
-    assert.equal(e.ok, true);
-    // 新建会话的 tab env 带上热注入的键
-    await c.newSession('juli-dev', '/tmp/dev');
-    const tab = fake.requests.filter((x) => x.method === 'tab.create').at(-1)!;
-    assert.equal((tab.params['env'] as Record<string, string>)['ANTHROPIC_API_KEY'], 'sk-x');
-    assert.equal((tab.params['env'] as Record<string, string>)['JULI_HERDR_SESSION'], 'juli-dev');
+    const names = (await c.listSessions()).sort();
+    assert.deepEqual(names, ['juli-dev', 'juli-finance', 'juli-reply']);
   });
 
   it('listSessionsDetailed：label 名单 + pane cwd + 前台进程名', async () => {
@@ -170,11 +184,11 @@ describe('createHerdrClient（fake server 契约）', () => {
     assert.equal((await c.sessionBirthsOf()).size, 0);
   });
 
-  it('killSession：workspace.close → hasSession 翻脸', async () => {
+  it('killSession：租户 tab.close → hasSession 翻脸', async () => {
     const c = client();
     const kill = await c.killSession('juli-reply');
     assert.equal(kill.ok, true);
-    assert.ok(fake.requests.filter((x) => x.method === 'workspace.close').at(-1) !== undefined);
+    assert.ok(fake.requests.filter((x) => x.method === 'tab.close').at(-1) !== undefined);
     assert.equal(await c.hasSession('juli-reply'), false);
   });
 
