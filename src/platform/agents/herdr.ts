@@ -174,6 +174,9 @@ export interface HerdrClient extends TmuxClient {
    * （本 client 的 newSession 产物正是），已在跑 agent 的 pane 会得到
    * herdr 侧 target_busy 报错。 */
   startManagedAgent(session: string, opts: HerdrManagedAgentStart): Promise<Result<HerdrAgentInfo, Error>>;
+  /** 会话 pane 的 herdr 公共 id（`wB:p2` 形态）——单 pane attach（`agent
+   * attach <pane-id>`）的入参。解析失败回空串（调用方决定兜底语义）。 */
+  paneIdOf(session: string): Promise<string>;
 }
 
 /** agent.start 入参（herdr AgentStartParams 直译；name 规则=小写字母开头、
@@ -707,6 +710,10 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
       if (!ref.ok) return '';
       return foregroundOf(ref.value.paneId);
     },
+    async paneIdOf(session) {
+      const ref = await resolve(session);
+      return ref.ok ? ref.value.paneId : '';
+    },
     async panePathOf(session) {
       const ref = await resolve(session);
       if (!ref.ok) return '';
@@ -856,7 +863,10 @@ export const herdrAttachCommand = (session: string, bin: string = HERDR_BIN): re
 /** ptyhub 的 herdr attach 实现（形状对齐 L0 attachTmuxPty：不存在→明确
  * 报错不代建；存在→起 PTY 跑 attach 命令）。 */
 export const herdrAttach = (deps: {
-  readonly client: { hasSession(name: string): Promise<boolean> };
+  readonly client: {
+    hasSession(name: string): Promise<boolean>;
+    paneIdOf(name: string): Promise<string>;
+  };
   readonly session: string;
   readonly bin?: string;
 }) => async (
@@ -867,7 +877,15 @@ export const herdrAttach = (deps: {
   if (!(await deps.client.hasSession(session))) {
     return err(new Error(`会话 ${session} 不存在——终端不代建（创建是显式动作：POST /api/sessions 或由引擎派发）`));
   }
-  return ok(createPty(herdrAttachCommand(deps.session, deps.bin), opts, onData));
+  // v2（2026-11-06）：Terminal 与会话一一映射——单 pane 直连 `agent attach
+  // <pane-id>`（herdr 0.9.5+，pane 上有被识别的 agent 即可，托管/手敲启动
+  // 皆可）。旧 namespace TUI attach 是全体会话共享同一视图（落在当前聚焦
+  // tab 上），juli-dev 的终端显示 juli-accounting 的画面就是它。
+  const paneId = await deps.client.paneIdOf(session);
+  if (paneId === '') {
+    return err(new Error(`会话 ${session} 的 pane 未就绪（agent 未在位）——终端不代建，派发链路会自愈拉起`));
+  }
+  return ok(createPty([deps.bin ?? HERDR_BIN, '--session', deps.session, 'agent', 'attach', paneId], opts, onData));
 };
 
 // ---- agent 执行环境文件（boot 兜底通道）----------------------------------------

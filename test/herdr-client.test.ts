@@ -203,6 +203,15 @@ describe('createHerdrClient（fake server 契约）', () => {
     assert.equal(miss.ok, false);
   });
 
+  it('paneIdOf：会话 pane 的 herdr 公共 id（单 pane attach 入参）', async () => {
+    const c = client();
+    // juli-reply 在 killSession 测试里已关——用存活会话
+    await c.newSession('juli-attach', '/tmp');
+    const id = await c.paneIdOf('juli-attach');
+    assert.ok(id.startsWith('w'), id);
+    assert.equal(await c.paneIdOf('no-such'), '');
+  });
+
   it('startManagedAgent：agent.start(name/kind/pane_id)，可选字段缺省不进 params', async () => {
     const c = client();
     await c.newSession('juli-zcode', '/tmp/zc');
