@@ -878,14 +878,19 @@ export const herdrAttach = (deps: {
     return err(new Error(`会话 ${session} 不存在——终端不代建（创建是显式动作：POST /api/sessions 或由引擎派发）`));
   }
   // v2（2026-11-06）：Terminal 与会话一一映射——单 pane 直连 `agent attach
-  // <pane-id>`（herdr 0.9.5+，pane 上有被识别的 agent 即可，托管/手敲启动
-  // 皆可）。旧 namespace TUI attach 是全体会话共享同一视图（落在当前聚焦
-  // tab 上），juli-dev 的终端显示 juli-accounting 的画面就是它。
+  // <pane-id> --takeover`（herdr 0.9.5+，pane 上有被识别的 agent 即可，托管/
+  // 手敲启动皆可）。--takeover 语义：单用户产品里后开的视图接管会话——
+  // 不带它，同会话第二路附着（旧视图未断/浏览器重连/探针残留）会得到
+  // "already has an attached client" 黑屏。旧 namespace TUI attach 是全体
+  // 会话共享同一视图（落在当前聚焦 tab 上），juli-dev 的终端显示
+  // juli-accounting 的画面就是它。
   const paneId = await deps.client.paneIdOf(session);
   if (paneId === '') {
     return err(new Error(`会话 ${session} 的 pane 未就绪（agent 未在位）——终端不代建，派发链路会自愈拉起`));
   }
-  return ok(createPty([deps.bin ?? HERDR_BIN, '--session', deps.session, 'agent', 'attach', paneId], opts, onData));
+  // ⚠flag 放 target 之后：homebrew 0.9.5 的 clap 对 `--takeover <id>` 前置序
+  // 报 unknown option（实测），后置序两代二进制都收。
+  return ok(createPty([deps.bin ?? HERDR_BIN, '--session', deps.session, 'agent', 'attach', paneId, '--takeover'], opts, onData));
 };
 
 // ---- agent 执行环境文件（boot 兜底通道）----------------------------------------
