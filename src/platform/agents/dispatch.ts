@@ -137,17 +137,23 @@ export const createProvisioningDispatch = (opts: ProvisioningOpts) => {
     let trustAccepted = false;
     let bootedHere = false;
     let selectionPresses = 0; // 2026-10-23：菜单连按看门狗（连续 MAX_MENU_PRESSES 次未消=提前中止）
-    let probe = await probePane(opts.tmux, session);
-    if (probe.foregroundIsShell) {
-      const cmd = opts.bootFor?.(session) ?? boot;
-      opts.log?.(`dispatch ${session}: 裸 shell——拉起 ${cmd}`);
-      bootedHere = true;
-      const booted = await opts.tmux.sendText(session, cmd);
-      if (!booted.ok) return booted;
-    }
     for (;;) {
-      probe = await probePane(opts.tmux, session);
+      const probe = await probePane(opts.tmux, session);
       if (probe.ready) break;
+      // boot 决策在循环内（2026-11-10 冷 server 竞态修复）：冷 server 新建的
+      // tab，shell 还在跑启动文件，首轮探针会把瞬时前台进程误读为非 shell——
+      // 旧实现 boot 只在循环前判一次就不再看，整轮不发引导命令，等满 waitMs
+      // 超时后 tab 永远是裸 shell。首次探到前台是 shell 即发引导命令；
+      // bootedHere 幂等守卫防重复（每轮派发至多一次 boot，REPL 崩回 shell
+      // 也不重灌）。foregroundIsShell 时 trustDialog/liveSelection 恒假，
+      // 本轮不会落进下方按键分支。
+      if (!bootedHere && probe.foregroundIsShell) {
+        const cmd = opts.bootFor?.(session) ?? boot;
+        opts.log?.(`dispatch ${session}: 裸 shell——拉起 ${cmd}`);
+        bootedHere = true;
+        const booted = await opts.tmux.sendText(session, cmd);
+        if (!booted.ok) return booted;
+      }
       // 看门狗只盯「连续在场」的菜单：探测到菜单不在（上一按已被消化、转入
       // 别的交互态）即清零——合法的多段菜单流（每段被 Enter 消化）不累计误杀。
       if (!probe.liveSelection) selectionPresses = 0;
