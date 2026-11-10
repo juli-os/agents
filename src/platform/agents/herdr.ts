@@ -177,6 +177,11 @@ export interface HerdrClient extends TmuxClient {
   /** 会话 pane 的 herdr 公共 id（`wB:p2` 形态）——单 pane attach（`agent
    * attach <pane-id>`）的入参。解析失败回空串（调用方决定兜底语义）。 */
   paneIdOf(session: string): Promise<string>;
+  /** pane 上被识别的 agent（pane.list 的 agent 字段，herdr PaneInfo.agent）：
+   * 非空 = `agent attach <pane>` 的在位前置成立。裸 shell / 寻址失败回空串
+   * （attach 闸用，2026-11-10 live 实测：裸 shell 期 attach 回
+   * agent_not_found、PTY 秒死）。 */
+  agentAtPaneOf(session: string): Promise<string>;
 }
 
 /** agent.start 入参（herdr AgentStartParams 直译；name 规则=小写字母开头、
@@ -295,6 +300,9 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
     readonly tab_id: string;
     readonly cwd?: string;
     readonly label?: string;
+    /** pane 上被识别的 agent（herdr PaneInfo.agent，string|null 原样）——
+     * 非空 = `agent attach` 的在位前置成立；裸 shell 期为 null。 */
+    readonly agent?: string | null;
   }
   interface TabRec {
     readonly tab_id: string;
@@ -714,6 +722,13 @@ export const createHerdrClient = (opts: HerdrClientOpts = {}): HerdrClient => {
       const ref = await resolve(session);
       return ref.ok ? ref.value.paneId : '';
     },
+    async agentAtPaneOf(session) {
+      const ref = await resolve(session);
+      if (!ref.ok) return '';
+      const pl = await listPanes();
+      if (!pl.ok) return '';
+      return pl.value.find((p) => p.pane_id === ref.value.paneId)?.agent ?? '';
+    },
     async panePathOf(session) {
       const ref = await resolve(session);
       if (!ref.ok) return '';
@@ -866,6 +881,7 @@ export const herdrAttach = (deps: {
   readonly client: {
     hasSession(name: string): Promise<boolean>;
     paneIdOf(name: string): Promise<string>;
+    agentAtPaneOf(name: string): Promise<string>;
   };
   readonly session: string;
   readonly bin?: string;
@@ -887,6 +903,14 @@ export const herdrAttach = (deps: {
   const paneId = await deps.client.paneIdOf(session);
   if (paneId === '') {
     return err(new Error(`会话 ${session} 的 pane 未就绪（agent 未在位）——终端不代建，派发链路会自愈拉起`));
+  }
+  // agent 在位闸（2026-11-10 live 实测：`agent attach` 只认 pane 上有被识别
+  // 的 agent——裸 shell 期回 agent_not_found、PTY 秒死）。会话在但 agent 未
+  // 在位是合法状态（新建会话/agent 退出/预热未跑），显式报错让调用方的
+  // 重试/预热逻辑接住，绝不 spawn 必死 PTY。
+  const agent = await deps.client.agentAtPaneOf(session);
+  if (agent === '') {
+    return err(new Error(`会话 ${session} 的 pane 未就绪（agent 未在位：裸 shell 无可附着的 agent）——终端不代建，派发链路会自愈拉起`));
   }
   // ⚠flag 放 target 之后：homebrew 0.9.5 的 clap 对 `--takeover <id>` 前置序
   // 报 unknown option（实测），后置序两代二进制都收。
@@ -932,7 +956,7 @@ export const startFakeHerdr = async (socketPath: string): Promise<FakeHerdr> => 
   let paneSeq = 0;
   let tabSeq = 0;
   const workspaces: { workspace_id: string; label: string; focused: boolean }[] = [];
-  const panes: { pane_id: string; workspace_id: string; tab_id: string; label: string; cwd: string; foreground: string }[] = [];
+  const panes: { pane_id: string; workspace_id: string; tab_id: string; label: string; cwd: string; foreground: string; agent: string | null }[] = [];
   const tabs: { tab_id: string; workspace_id: string; label: string }[] = [];
   const managedAgents: { pane_id: string; name: string; kind: string }[] = [];
   const server = createServer((sock) => {
@@ -966,7 +990,7 @@ export const startFakeHerdr = async (socketPath: string): Promise<FakeHerdr> => 
         tabs.push({ tab_id: defTabId, workspace_id: wsId, label: '1' });
         panes.push({
           pane_id: `${wsId}:p${paneSeq}`, workspace_id: wsId, tab_id: defTabId, label: '',
-          cwd: String(req.params['cwd'] ?? ''), foreground: 'zsh',
+          cwd: String(req.params['cwd'] ?? ''), foreground: 'zsh', agent: null,
         });
         return okR({
           workspace: { workspace_id: wsId, label: req.params['label'] },
@@ -984,7 +1008,7 @@ export const startFakeHerdr = async (socketPath: string): Promise<FakeHerdr> => 
         tabs.push({ tab_id: tabId, workspace_id: wsId, label: String(req.params['label'] ?? '') });
         panes.push({
           pane_id: `${wsId}:p${paneSeq}`, workspace_id: wsId, tab_id: tabId, label: '',
-          cwd: String(req.params['cwd'] ?? ''), foreground: 'zsh',
+          cwd: String(req.params['cwd'] ?? ''), foreground: 'zsh', agent: null,
         });
         return okR({ tab: { tab_id: tabId }, root_pane: { pane_id: `${wsId}:p${paneSeq}` } });
       }
@@ -1036,8 +1060,10 @@ export const startFakeHerdr = async (socketPath: string): Promise<FakeHerdr> => 
         const name = String(req.params['name'] ?? '');
         const kind = String(req.params['kind'] ?? '');
         managedAgents.push({ pane_id: pane.pane_id, name, kind });
-        // 托管启动后前台进程即 agent 可执行名（与真实 herdr 的 managed 归因同形）。
+        // 托管启动后前台进程即 agent 可执行名（与真实 herdr 的 managed 归因同形），
+        // pane.agent（PaneInfo.agent，识别归因）同位落值——agent attach 的在位闸读它。
         pane.foreground = kind;
+        pane.agent = kind;
         // raw agent.start = 提交瞬间快照（就绪未落位）——与真实 herdr 同形，
         // 客户端的就绪轮询走 agent.get。
         return okR({
