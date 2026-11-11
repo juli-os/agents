@@ -27,6 +27,7 @@ import {
   createAgentBackend as createAgentBackendBase,
   type AgentBackend, type AgentBackendKind, type AgentBackendOpts,
 } from '@juli-os/baton';
+export type { AgentBackend, AgentBackendKind, AgentBackendOpts };
 import { defaultHookSpecs } from './platform/agents/hooks.ts';
 
 /** 终端后端工厂（tmux|herdr，实现在 @juli-os/baton）——同签名同行为：包装层
