@@ -8,7 +8,7 @@
 
 > **createOrchestrator**(`deps`): [`Orchestrator`](../interfaces/Orchestrator.md)
 
-Defined in: [platform/agents/orchestrator.ts:208](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L208)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:208](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L208)
 
 ## Parameters
 

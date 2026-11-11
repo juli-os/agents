@@ -6,7 +6,7 @@
 
 # Interface: HookSpec
 
-Defined in: [platform/agents/hooks.ts:12](https://github.com/juli-os/agents/blob/main/src/platform/agents/hooks.ts#L12)
+Defined in: [peel-l0-agents/src/platform/agents/hooks.ts:12](https://github.com/juli-os/agents/blob/main/src/platform/agents/hooks.ts#L12)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/hooks.ts:12](https://github.com/juli-os/agents/blob
 
 > `readonly` **command**: `string`
 
-Defined in: [platform/agents/hooks.ts:21](https://github.com/juli-os/agents/blob/main/src/platform/agents/hooks.ts#L21)
+Defined in: [peel-l0-agents/src/platform/agents/hooks.ts:21](https://github.com/juli-os/agents/blob/main/src/platform/agents/hooks.ts#L21)
 
 完整命令行（通常 = `node <dist>/cli/hook.js <verb> "$(tmux ...)" ...`）。
 
@@ -24,7 +24,7 @@ Defined in: [platform/agents/hooks.ts:21](https://github.com/juli-os/agents/blob
 
 > `readonly` **event**: `string`
 
-Defined in: [platform/agents/hooks.ts:14](https://github.com/juli-os/agents/blob/main/src/platform/agents/hooks.ts#L14)
+Defined in: [peel-l0-agents/src/platform/agents/hooks.ts:14](https://github.com/juli-os/agents/blob/main/src/platform/agents/hooks.ts#L14)
 
 CC hook 事件名（Stop / SessionStart / PermissionRequest / UserPromptSubmit / Notification / PostToolUse）。
 
@@ -34,7 +34,7 @@ CC hook 事件名（Stop / SessionStart / PermissionRequest / UserPromptSubmit /
 
 > `readonly` `optional` **matcher?**: `string`
 
-Defined in: [platform/agents/hooks.ts:19](https://github.com/juli-os/agents/blob/main/src/platform/agents/hooks.ts#L19)
+Defined in: [peel-l0-agents/src/platform/agents/hooks.ts:19](https://github.com/juli-os/agents/blob/main/src/platform/agents/hooks.ts#L19)
 
 工具名白名单（正则 include 过滤，官方机制）：省略=全量。PostToolUse
 钉 `^(Skill$|skill__)` 只放 skill 工具调用进来（CC 实测 tool_name=

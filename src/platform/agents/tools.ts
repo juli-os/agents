@@ -7,7 +7,7 @@ import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
 import { join, resolve as resolvePath } from 'node:path';
 import { ok, err, toResult, type Result } from '../shared/result.ts';
 import type { ToolSchema } from '../../contracts/ports.ts';
-import type { TmuxClient } from './tmux.ts';
+import type { TmuxClient } from '@juli-os/baton';
 import { probePane } from './pane_probe.ts';
 
 // ---- 派发安全策略（对应 Go blockedPatterns，逐条移植）---------------------------

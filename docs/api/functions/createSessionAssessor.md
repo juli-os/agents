@@ -8,7 +8,7 @@
 
 > **createSessionAssessor**(`llm`, `model`, `prompt?`): [`Assessor`](../interfaces/Assessor.md)
 
-Defined in: [platform/agents/orchestrator.ts:150](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L150)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:150](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L150)
 
 ## Parameters
 

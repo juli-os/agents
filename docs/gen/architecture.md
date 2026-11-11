@@ -12,20 +12,25 @@ flowchart LR
   n2["platform/agents"]
   n3["platform/shared"]
   n0 -->|1| n1
-  n0 -->|15| n2
+  n0 -->|13| n2
   n0 -->|1| n3
   n1 -->|1| n3
   n2 -->|4| n1
-  n2 -->|17| n3
+  n2 -->|13| n3
+  x0:::external["@juli-os/baton"]
+  n0 -.->|5| x0
+  n2 -.->|5| x0
+  classDef external stroke-dasharray: 5 5
 ```
 
 边上的数字 = 该方向聚合到的相对 import 条数；同目录内部依赖不画。
+虚线节点 = 对 @juli-os/* 兄弟包的依赖。
 
 ## 目录职责
 
 | 目录 | 职责 |
 | --- | --- |
-| `facade（index.ts）` | L0 execution-substrate facade — the only public surface of this layer. |
+| `facade（index.ts）` | L0 execution-substrate facade — the only public surface of this layer. Complete export surface of the source modules. De… |
 | `contracts` | L0 的对外端口契约（type-only，零运行时代码）：引擎注入实现，包内只认形状。 |
-| `platform/agents` | herdr 执行后端（2026-10-31 接入，2026-11-04 下沉进本包）：以 herdr（terminal workspace manager，herdr.dev，Rust）替换/并列 tmux 作为 agent终端基底。 |
+| `platform/agents` | 工具注册表（对应 Go internal/ai/agent/tools）：Tool/Param 结构 + 18 个工具。 |
 | `platform/shared` | pane 文本指纹判定的纯函数族（2026-09-28 提问卡单修复）：platform/agents的探针与 business/workflow 的僵尸看门狗共用同一口径——「什么算等输入」是跨层共识，住在 shared 零依赖（arch… |

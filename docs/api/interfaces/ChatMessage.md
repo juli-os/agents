@@ -6,7 +6,7 @@
 
 # Interface: ChatMessage
 
-Defined in: [contracts/ports.ts:35](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L35)
+Defined in: [peel-l0-agents/src/contracts/ports.ts:35](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L35)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [contracts/ports.ts:35](https://github.com/juli-os/agents/blob/main/
 
 > `readonly` **content**: `string`
 
-Defined in: [contracts/ports.ts:37](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L37)
+Defined in: [peel-l0-agents/src/contracts/ports.ts:37](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L37)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [contracts/ports.ts:37](https://github.com/juli-os/agents/blob/main/
 
 > `readonly` **role**: `"assistant"` \| `"user"` \| `"tool"` \| `"system"`
 
-Defined in: [contracts/ports.ts:36](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L36)
+Defined in: [peel-l0-agents/src/contracts/ports.ts:36](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L36)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [contracts/ports.ts:36](https://github.com/juli-os/agents/blob/main/
 
 > `readonly` `optional` **system?**: `string`
 
-Defined in: [contracts/ports.ts:41](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L41)
+Defined in: [peel-l0-agents/src/contracts/ports.ts:41](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L41)
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: [contracts/ports.ts:41](https://github.com/juli-os/agents/blob/main/
 
 > `readonly` `optional` **toolCalls?**: readonly `ToolCall`[]
 
-Defined in: [contracts/ports.ts:38](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L38)
+Defined in: [peel-l0-agents/src/contracts/ports.ts:38](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L38)
 
 ***
 
@@ -46,6 +46,6 @@ Defined in: [contracts/ports.ts:38](https://github.com/juli-os/agents/blob/main/
 
 > `readonly` `optional` **toolResults?**: readonly `object`[]
 
-Defined in: [contracts/ports.ts:40](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L40)
+Defined in: [peel-l0-agents/src/contracts/ports.ts:40](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L40)
 
 role=tool 时：上一轮 assistant toolCalls 的结果。

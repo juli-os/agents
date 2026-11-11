@@ -6,7 +6,7 @@
 
 # Interface: SessionHealer
 
-Defined in: [platform/agents/tools.ts:67](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L67)
+Defined in: [peel-l0-agents/src/platform/agents/tools.ts:67](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L67)
 
 ## Methods
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/tools.ts:67](https://github.com/juli-os/agents/blob
 
 > **healSession**(`session`): `Promise`\<`boolean`\>
 
-Defined in: [platform/agents/tools.ts:69](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L69)
+Defined in: [peel-l0-agents/src/platform/agents/tools.ts:69](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L69)
 
 agent 死亡的会话从快照自愈重启；返回是否成功。
 

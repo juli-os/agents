@@ -8,4 +8,4 @@
 
 > `const` **DEFAULT\_PTY\_ROWS**: `32` = `32`
 
-Defined in: [platform/agents/pty.ts:24](https://github.com/juli-os/agents/blob/main/src/platform/agents/pty.ts#L24)
+Defined in: baton/dist/baton/pty.d.ts:13

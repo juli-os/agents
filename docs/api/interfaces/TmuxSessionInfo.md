@@ -6,7 +6,7 @@
 
 # Interface: TmuxSessionInfo
 
-Defined in: [platform/agents/tmux.ts:67](https://github.com/juli-os/agents/blob/main/src/platform/agents/tmux.ts#L67)
+Defined in: baton/dist/baton/tmux.d.ts:5
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/tmux.ts:67](https://github.com/juli-os/agents/blob/
 
 > `readonly` **attached**: `boolean`
 
-Defined in: [platform/agents/tmux.ts:69](https://github.com/juli-os/agents/blob/main/src/platform/agents/tmux.ts#L69)
+Defined in: baton/dist/baton/tmux.d.ts:7
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [platform/agents/tmux.ts:69](https://github.com/juli-os/agents/blob/
 
 > `readonly` **cmd**: `string`
 
-Defined in: [platform/agents/tmux.ts:71](https://github.com/juli-os/agents/blob/main/src/platform/agents/tmux.ts#L71)
+Defined in: baton/dist/baton/tmux.d.ts:9
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [platform/agents/tmux.ts:71](https://github.com/juli-os/agents/blob/
 
 > `readonly` **name**: `string`
 
-Defined in: [platform/agents/tmux.ts:68](https://github.com/juli-os/agents/blob/main/src/platform/agents/tmux.ts#L68)
+Defined in: baton/dist/baton/tmux.d.ts:6
 
 ***
 
@@ -38,4 +38,4 @@ Defined in: [platform/agents/tmux.ts:68](https://github.com/juli-os/agents/blob/
 
 > `readonly` **path**: `string`
 
-Defined in: [platform/agents/tmux.ts:70](https://github.com/juli-os/agents/blob/main/src/platform/agents/tmux.ts#L70)
+Defined in: baton/dist/baton/tmux.d.ts:8

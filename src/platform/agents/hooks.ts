@@ -7,7 +7,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { err, ok, type Result } from '../shared/result.ts';
-import { TMUX_BIN } from './tmux.ts';
+import { TMUX_BIN } from '@juli-os/baton';
 
 export interface HookSpec {
   /** CC hook 事件名（Stop / SessionStart / PermissionRequest / UserPromptSubmit / Notification / PostToolUse）。 */

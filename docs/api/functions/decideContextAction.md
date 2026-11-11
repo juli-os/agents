@@ -8,7 +8,7 @@
 
 > **decideContextAction**(`prev`, `currentWf`, `lastInputTokens`, `threshold?`, `nowMs?`): [`ContextAction`](../type-aliases/ContextAction.md)
 
-Defined in: [platform/agents/contextGate.ts:41](https://github.com/juli-os/agents/blob/main/src/platform/agents/contextGate.ts#L41)
+Defined in: [peel-l0-agents/src/platform/agents/contextGate.ts:41](https://github.com/juli-os/agents/blob/main/src/platform/agents/contextGate.ts#L41)
 
 判定（纯函数）：
 - 本单与该会话当前单不同（切换 workflow）→ clear；

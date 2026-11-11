@@ -6,7 +6,7 @@
 
 # Interface: SkillRegistry
 
-Defined in: [platform/agents/skills.ts:55](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L55)
+Defined in: [peel-l0-agents/src/platform/agents/skills.ts:55](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L55)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/skills.ts:55](https://github.com/juli-os/agents/blo
 
 > `readonly` **all**: readonly [`Skill`](Skill.md)[]
 
-Defined in: [platform/agents/skills.ts:56](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L56)
+Defined in: [peel-l0-agents/src/platform/agents/skills.ts:56](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L56)
 
 ## Methods
 
@@ -22,7 +22,7 @@ Defined in: [platform/agents/skills.ts:56](https://github.com/juli-os/agents/blo
 
 > **activate**(`name`, `args`): `Result`\<\{ `allowedTools`: readonly `string`[]; `prompt`: `string`; \}, `Error`\>
 
-Defined in: [platform/agents/skills.ts:58](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L58)
+Defined in: [peel-l0-agents/src/platform/agents/skills.ts:58](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L58)
 
 #### Parameters
 
@@ -44,7 +44,7 @@ readonly `string`[]
 
 > **find**(`name`): [`Skill`](Skill.md) \| `null`
 
-Defined in: [platform/agents/skills.ts:57](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L57)
+Defined in: [peel-l0-agents/src/platform/agents/skills.ts:57](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L57)
 
 #### Parameters
 
@@ -62,7 +62,7 @@ Defined in: [platform/agents/skills.ts:57](https://github.com/juli-os/agents/blo
 
 > **takeActive**(): \{ `allowedTools`: readonly `string`[]; `prompt`: `string`; \} \| `null`
 
-Defined in: [platform/agents/skills.ts:60](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L60)
+Defined in: [peel-l0-agents/src/platform/agents/skills.ts:60](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L60)
 
 取走激活态（单次语义：注入下一轮输入后即失效）。
 

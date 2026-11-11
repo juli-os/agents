@@ -1,7 +1,7 @@
 {
   "name": "@juli-os/agents",
-  "version": "0.4.3",
-  "description": "juli-os L0 layer: the execution substrate — tmux-based agent session runtime with delivery confirmation, self-healing dispatch, PTY attach, hooks, snapshots, skills, and an ACP executor. Zero npm dependencies.",
+  "version": "0.5.0",
+  "description": "juli-os L0 layer: the execution substrate — agent session runtime with delivery confirmation, self-healing dispatch, hooks, snapshots, skills, and an ACP executor, on @juli-os/baton terminal remote control. No npm dependencies beyond @juli-os/*.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -30,6 +30,9 @@
     "docs:gen": "node scripts/gen-docs.mjs && typedoc",
     "docs:build": "npm run docs:gen && mkdocs build --strict",
     "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@juli-os/baton": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

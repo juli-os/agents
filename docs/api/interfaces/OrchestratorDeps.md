@@ -6,7 +6,7 @@
 
 # Interface: OrchestratorDeps
 
-Defined in: [platform/agents/orchestrator.ts:179](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L179)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:179](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L179)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/orchestrator.ts:179](https://github.com/juli-os/age
 
 > `readonly` `optional` **callTimeoutMs?**: `number`
 
-Defined in: [platform/agents/orchestrator.ts:188](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L188)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:188](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L188)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [platform/agents/orchestrator.ts:188](https://github.com/juli-os/age
 
 > `readonly` `optional` **clock?**: `Clock`
 
-Defined in: [platform/agents/orchestrator.ts:187](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L187)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:187](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L187)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [platform/agents/orchestrator.ts:187](https://github.com/juli-os/age
 
 > `readonly` `optional` **commands?**: [`CommandRegistry`](CommandRegistry.md)
 
-Defined in: [platform/agents/orchestrator.ts:186](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L186)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:186](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L186)
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: [platform/agents/orchestrator.ts:186](https://github.com/juli-os/age
 
 > `readonly` `optional` **hooks?**: [`HookManager`](HookManager.md)
 
-Defined in: [platform/agents/orchestrator.ts:185](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L185)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:185](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L185)
 
 ***
 
@@ -46,7 +46,7 @@ Defined in: [platform/agents/orchestrator.ts:185](https://github.com/juli-os/age
 
 > `readonly` **llm**: [`ChatLlmPort`](ChatLlmPort.md)
 
-Defined in: [platform/agents/orchestrator.ts:180](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L180)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:180](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L180)
 
 ***
 
@@ -54,7 +54,7 @@ Defined in: [platform/agents/orchestrator.ts:180](https://github.com/juli-os/age
 
 > `readonly` `optional` **log?**: (`m`) => `void`
 
-Defined in: [platform/agents/orchestrator.ts:189](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L189)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:189](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L189)
 
 #### Parameters
 
@@ -72,7 +72,7 @@ Defined in: [platform/agents/orchestrator.ts:189](https://github.com/juli-os/age
 
 > `readonly` `optional` **maxContextMessages?**: `number`
 
-Defined in: [platform/agents/orchestrator.ts:184](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L184)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:184](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L184)
 
 ***
 
@@ -80,7 +80,7 @@ Defined in: [platform/agents/orchestrator.ts:184](https://github.com/juli-os/age
 
 > `readonly` **model**: `string`
 
-Defined in: [platform/agents/orchestrator.ts:181](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L181)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:181](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L181)
 
 ***
 
@@ -88,7 +88,7 @@ Defined in: [platform/agents/orchestrator.ts:181](https://github.com/juli-os/age
 
 > `readonly` `optional` **skills?**: [`SkillRegistry`](SkillRegistry.md)
 
-Defined in: [platform/agents/orchestrator.ts:193](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L193)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:193](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L193)
 
 技能注册表：/skill 激活，下一轮输入注入（单次语义）。
 
@@ -98,7 +98,7 @@ Defined in: [platform/agents/orchestrator.ts:193](https://github.com/juli-os/age
 
 > `readonly` **systemPrompt**: `string`
 
-Defined in: [platform/agents/orchestrator.ts:183](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L183)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:183](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L183)
 
 ***
 
@@ -106,7 +106,7 @@ Defined in: [platform/agents/orchestrator.ts:183](https://github.com/juli-os/age
 
 > `readonly` **tools**: readonly [`Tool`](Tool.md)[]
 
-Defined in: [platform/agents/orchestrator.ts:182](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L182)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:182](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L182)
 
 ***
 
@@ -114,7 +114,7 @@ Defined in: [platform/agents/orchestrator.ts:182](https://github.com/juli-os/age
 
 > `readonly` `optional` **usage?**: (`r`) => `void`
 
-Defined in: [platform/agents/orchestrator.ts:191](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L191)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:191](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L191)
 
 用量入账（每次 LLM 调用一条）。
 

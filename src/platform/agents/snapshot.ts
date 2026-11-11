@@ -4,7 +4,7 @@
 
 import { readFileSync, writeFileSync, existsSync, renameSync } from 'node:fs';
 import { ok, type Result } from '../shared/result.ts';
-import type { TmuxClient } from './tmux.ts';
+import type { TmuxClient } from '@juli-os/baton';
 
 export interface SessionSnapshot {
   readonly name: string;

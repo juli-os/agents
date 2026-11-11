@@ -1,10 +1,8 @@
 // 会话路由器（复用优先）：模板/LLM 点名的会话若不存在，落回 default——
 // 绝不因一次流水凭空造出新 agent（创建是显式动作：nodes claim 或人工建
-// 会话）。名单取【同步快照】（execFileSync，resolve 低频、毫秒级，杜绝
-// 异步刷新竞态——同步挡板看不到名单时原样放行，不误改道）。
-
-import { execFileSync } from 'node:child_process';
-import { TMUX_BIN } from './tmux.ts';
+// 会话）。名单取【同步快照】（listSync 由 @juli-os/baton 的 tmuxListSync/
+// herdrListSync 提供——遥控器件已剥离成包；同步挡板看不到名单时原样放行，
+// 不误改道）。
 
 export interface SessionRouterDeps {
   /** 同步取活会话名单；异常按空名单处理。 */
@@ -56,15 +54,4 @@ export const createSessionRouter = (deps: SessionRouterDeps): SessionRouter => {
       return snapshot();
     },
   };
-};
-
-/** 生产 listSync：tmux list-sessions（可选自定 socket）。 */
-export const tmuxListSync = (socketPath?: string): readonly string[] => {
-  const args = [...(socketPath ? ['-S', socketPath] : []), 'list-sessions', '-F', '#{session_name}'];
-  try {
-    return execFileSync(TMUX_BIN, args, { encoding: 'utf8', timeout: 3000 })
-      .split('\n').map((x) => x.trim()).filter(Boolean);
-  } catch {
-    return []; // 无 server / 无 tmux：空名单
-  }
 };

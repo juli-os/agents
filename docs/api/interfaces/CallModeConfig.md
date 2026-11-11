@@ -6,7 +6,7 @@
 
 # Interface: CallModeConfig
 
-Defined in: [platform/agents/voice.ts:39](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L39)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:39](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L39)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/voice.ts:39](https://github.com/juli-os/agents/blob
 
 > `readonly` **blockAllTools**: `boolean`
 
-Defined in: [platform/agents/voice.ts:41](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L41)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:41](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L41)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [platform/agents/voice.ts:41](https://github.com/juli-os/agents/blob
 
 > `readonly` **prefix**: `string`
 
-Defined in: [platform/agents/voice.ts:40](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L40)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:40](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L40)
 
 ***
 
@@ -30,4 +30,4 @@ Defined in: [platform/agents/voice.ts:40](https://github.com/juli-os/agents/blob
 
 > `readonly` **stagePlans**: `boolean`
 
-Defined in: [platform/agents/voice.ts:42](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L42)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:42](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L42)

@@ -1,7 +1,7 @@
 // pane 探针（对应 Go tools/pane_probe.go）：一次 capture 推导面板的完整
 // 交互状态——确定性启发式，零 LLM。发射器与发送方共用同一套"什么算就绪"。
 
-import type { TmuxClient } from './tmux.ts';
+import type { TmuxClient } from '@juli-os/baton';
 import { paneMenuVisible } from '../shared/paneFingerprint.ts';
 
 export { paneAwaitingInput } from '../shared/paneFingerprint.ts'; // 转发：探针消费方零改动

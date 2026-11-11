@@ -6,7 +6,7 @@
 
 # Interface: ChatResult
 
-Defined in: [contracts/ports.ts:44](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L44)
+Defined in: [peel-l0-agents/src/contracts/ports.ts:44](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L44)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [contracts/ports.ts:44](https://github.com/juli-os/agents/blob/main/
 
 > `readonly` **content**: `string`
 
-Defined in: [contracts/ports.ts:45](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L45)
+Defined in: [peel-l0-agents/src/contracts/ports.ts:45](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L45)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [contracts/ports.ts:45](https://github.com/juli-os/agents/blob/main/
 
 > `readonly` `optional` **stopReason?**: `string`
 
-Defined in: [contracts/ports.ts:47](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L47)
+Defined in: [peel-l0-agents/src/contracts/ports.ts:47](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L47)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [contracts/ports.ts:47](https://github.com/juli-os/agents/blob/main/
 
 > `readonly` `optional` **thinking?**: `string`
 
-Defined in: [contracts/ports.ts:46](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L46)
+Defined in: [peel-l0-agents/src/contracts/ports.ts:46](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L46)
 
 ***
 
@@ -38,4 +38,4 @@ Defined in: [contracts/ports.ts:46](https://github.com/juli-os/agents/blob/main/
 
 > `readonly` **toolCalls**: readonly `ToolCall`[]
 
-Defined in: [contracts/ports.ts:48](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L48)
+Defined in: [peel-l0-agents/src/contracts/ports.ts:48](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L48)

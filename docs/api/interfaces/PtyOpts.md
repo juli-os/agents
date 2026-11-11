@@ -6,7 +6,7 @@
 
 # Interface: PtyOpts
 
-Defined in: [platform/agents/pty.ts:11](https://github.com/juli-os/agents/blob/main/src/platform/agents/pty.ts#L11)
+Defined in: baton/dist/baton/pty.d.ts:2
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/pty.ts:11](https://github.com/juli-os/agents/blob/m
 
 > `readonly` `optional` **cols?**: `number`
 
-Defined in: [platform/agents/pty.ts:12](https://github.com/juli-os/agents/blob/main/src/platform/agents/pty.ts#L12)
+Defined in: baton/dist/baton/pty.d.ts:3
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [platform/agents/pty.ts:12](https://github.com/juli-os/agents/blob/m
 
 > `readonly` `optional` **env?**: `Readonly`\<`Record`\<`string`, `string`\>\>
 
-Defined in: [platform/agents/pty.ts:14](https://github.com/juli-os/agents/blob/main/src/platform/agents/pty.ts#L14)
+Defined in: baton/dist/baton/pty.d.ts:5
 
 ***
 
@@ -30,4 +30,4 @@ Defined in: [platform/agents/pty.ts:14](https://github.com/juli-os/agents/blob/m
 
 > `readonly` `optional` **rows?**: `number`
 
-Defined in: [platform/agents/pty.ts:13](https://github.com/juli-os/agents/blob/main/src/platform/agents/pty.ts#L13)
+Defined in: baton/dist/baton/pty.d.ts:4

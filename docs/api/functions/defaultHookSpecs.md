@@ -8,7 +8,7 @@
 
 > **defaultHookSpecs**(`hookJsPath`, `password?`, `serviceUrl?`, `sessionExpr?`): readonly [`HookSpec`](../interfaces/HookSpec.md)[]
 
-Defined in: [platform/agents/hooks.ts:101](https://github.com/juli-os/agents/blob/main/src/platform/agents/hooks.ts#L101)
+Defined in: [peel-l0-agents/src/platform/agents/hooks.ts:101](https://github.com/juli-os/agents/blob/main/src/platform/agents/hooks.ts#L101)
 
 标准六 hook 命令组（tmux 会话名内嵌进命令行——CC 的 stdin 里没有它）。
 服务端 /api/* 全量 Bearer 认证，而 claude 派生的 hook 进程没有 JULI_PASSWORD

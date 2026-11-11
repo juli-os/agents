@@ -8,7 +8,7 @@
 
 > **createHookManager**(): [`HookManager`](../interfaces/HookManager.md)
 
-Defined in: [platform/agents/orchestrator.ts:43](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L43)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:43](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L43)
 
 ## Returns
 
