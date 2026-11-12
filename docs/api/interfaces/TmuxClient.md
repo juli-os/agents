@@ -8,6 +8,10 @@
 
 Defined in: [platform/agents/tmux.ts:116](https://github.com/juli-os/agents/blob/main/src/platform/agents/tmux.ts#L116)
 
+## Extended by
+
+- [`HerdrClient`](HerdrClient.md)
+
 ## Properties
 
 ### socketPath?

@@ -12,7 +12,7 @@ flowchart LR
   n2["platform/agents"]
   n3["platform/shared"]
   n0 -->|1| n1
-  n0 -->|15| n2
+  n0 -->|16| n2
   n0 -->|1| n3
   n1 -->|1| n3
   n2 -->|4| n1

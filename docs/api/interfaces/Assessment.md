@@ -12,7 +12,7 @@ Defined in: [platform/agents/tools.ts:57](https://github.com/juli-os/agents/blob
 
 ### decision
 
-> `readonly` **decision**: `"approve"` \| `"reject"` \| `"idle"` \| `"unknown"`
+> `readonly` **decision**: `"unknown"` \| `"idle"` \| `"approve"` \| `"reject"`
 
 Defined in: [platform/agents/tools.ts:58](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L58)
 
