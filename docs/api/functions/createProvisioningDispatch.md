@@ -8,7 +8,7 @@
 
 > **createProvisioningDispatch**(`opts`): (`_source`, `session`, `text`) => `Promise`\<`Result`\<`void`, `Error`\>\>
 
-Defined in: [platform/agents/dispatch.ts:62](https://github.com/juli-os/agents/blob/main/src/platform/agents/dispatch.ts#L62)
+Defined in: [peel-l0-agents/src/platform/agents/dispatch.ts:62](https://github.com/juli-os/agents/blob/main/src/platform/agents/dispatch.ts#L62)
 
 ## Parameters
 

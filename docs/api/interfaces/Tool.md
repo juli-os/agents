@@ -6,7 +6,7 @@
 
 # Interface: Tool
 
-Defined in: [platform/agents/tools.ts:41](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L41)
+Defined in: [peel-l0-agents/src/platform/agents/tools.ts:41](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L41)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/tools.ts:41](https://github.com/juli-os/agents/blob
 
 > `readonly` **description**: `string`
 
-Defined in: [platform/agents/tools.ts:43](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L43)
+Defined in: [peel-l0-agents/src/platform/agents/tools.ts:43](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L43)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [platform/agents/tools.ts:43](https://github.com/juli-os/agents/blob
 
 > `readonly` **name**: `string`
 
-Defined in: [platform/agents/tools.ts:42](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L42)
+Defined in: [peel-l0-agents/src/platform/agents/tools.ts:42](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L42)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [platform/agents/tools.ts:42](https://github.com/juli-os/agents/blob
 
 > `readonly` **parameters**: readonly [`ToolParam`](ToolParam.md)[]
 
-Defined in: [platform/agents/tools.ts:44](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L44)
+Defined in: [peel-l0-agents/src/platform/agents/tools.ts:44](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L44)
 
 ## Methods
 
@@ -38,7 +38,7 @@ Defined in: [platform/agents/tools.ts:44](https://github.com/juli-os/agents/blob
 
 > **execute**(`args`): `Promise`\<`Result`\<`string`, `Error`\>\>
 
-Defined in: [platform/agents/tools.ts:45](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L45)
+Defined in: [peel-l0-agents/src/platform/agents/tools.ts:45](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L45)
 
 #### Parameters
 

@@ -8,7 +8,7 @@
 
 > **registerSkillCommands**(`registry`, `skills`, `emitText`): `void`
 
-Defined in: [platform/agents/orchestrator.ts:325](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L325)
+Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:325](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L325)
 
 注册技能类 slash 命令（/skills 列表、/skill <name> [args] 激活）。
 

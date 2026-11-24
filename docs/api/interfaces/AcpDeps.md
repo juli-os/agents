@@ -6,7 +6,7 @@
 
 # Interface: AcpDeps
 
-Defined in: [platform/agents/acp.ts:46](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L46)
+Defined in: [peel-l0-agents/src/platform/agents/acp.ts:46](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L46)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/acp.ts:46](https://github.com/juli-os/agents/blob/m
 
 > `readonly` **apiKey**: `string`
 
-Defined in: [platform/agents/acp.ts:51](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L51)
+Defined in: [peel-l0-agents/src/platform/agents/acp.ts:51](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L51)
 
 子进程 env 注入（codex 的 GLM provider 读 GLM_API_KEY）。
 
@@ -24,7 +24,7 @@ Defined in: [platform/agents/acp.ts:51](https://github.com/juli-os/agents/blob/m
 
 > `readonly` **command**: readonly `string`[]
 
-Defined in: [platform/agents/acp.ts:48](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L48)
+Defined in: [peel-l0-agents/src/platform/agents/acp.ts:48](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L48)
 
 启动命令（如 ["codex", "app-server"]）。
 
@@ -34,7 +34,7 @@ Defined in: [platform/agents/acp.ts:48](https://github.com/juli-os/agents/blob/m
 
 > `readonly` `optional` **env?**: `Readonly`\<`Record`\<`string`, `string` \| `undefined`\>\>
 
-Defined in: [platform/agents/acp.ts:54](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L54)
+Defined in: [peel-l0-agents/src/platform/agents/acp.ts:54](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L54)
 
 传 process.env 即可；undefined 值在启动前被剔除。
 
@@ -44,7 +44,7 @@ Defined in: [platform/agents/acp.ts:54](https://github.com/juli-os/agents/blob/m
 
 > `readonly` **log**: (`msg`) => `void`
 
-Defined in: [platform/agents/acp.ts:52](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L52)
+Defined in: [peel-l0-agents/src/platform/agents/acp.ts:52](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L52)
 
 #### Parameters
 
@@ -62,4 +62,4 @@ Defined in: [platform/agents/acp.ts:52](https://github.com/juli-os/agents/blob/m
 
 > `readonly` **model**: `string`
 
-Defined in: [platform/agents/acp.ts:49](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L49)
+Defined in: [peel-l0-agents/src/platform/agents/acp.ts:49](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L49)

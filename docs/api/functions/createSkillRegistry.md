@@ -8,7 +8,7 @@
 
 > **createSkillRegistry**(`dir`): [`SkillRegistry`](../interfaces/SkillRegistry.md)
 
-Defined in: [platform/agents/skills.ts:63](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L63)
+Defined in: [peel-l0-agents/src/platform/agents/skills.ts:63](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L63)
 
 ## Parameters
 

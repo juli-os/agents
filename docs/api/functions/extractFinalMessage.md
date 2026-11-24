@@ -8,7 +8,7 @@
 
 > **extractFinalMessage**(`transcriptPath`): `string` \| `null`
 
-Defined in: [platform/agents/transcript.ts:109](https://github.com/juli-os/agents/blob/main/src/platform/agents/transcript.ts#L109)
+Defined in: [peel-l0-agents/src/platform/agents/transcript.ts:109](https://github.com/juli-os/agents/blob/main/src/platform/agents/transcript.ts#L109)
 
 从 transcript JSONL 尾部提取最后一条 assistant 文本消息。
 CC transcript 行形如 {"type":"assistant","message":{role,content:[{type:"text",text}]}}；

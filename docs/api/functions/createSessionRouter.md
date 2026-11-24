@@ -8,7 +8,7 @@
 
 > **createSessionRouter**(`deps`): [`SessionRouter`](../interfaces/SessionRouter.md)
 
-Defined in: [platform/agents/router.ts:26](https://github.com/juli-os/agents/blob/main/src/platform/agents/router.ts#L26)
+Defined in: [peel-l0-agents/src/platform/agents/router.ts:24](https://github.com/juli-os/agents/blob/main/src/platform/agents/router.ts#L24)
 
 ## Parameters
 

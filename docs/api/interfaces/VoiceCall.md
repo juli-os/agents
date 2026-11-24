@@ -6,7 +6,7 @@
 
 # Interface: VoiceCall
 
-Defined in: [platform/agents/voice.ts:127](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L127)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:127](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L127)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/voice.ts:127](https://github.com/juli-os/agents/blo
 
 > `readonly` **mode**: [`CallMode`](../type-aliases/CallMode.md)
 
-Defined in: [platform/agents/voice.ts:128](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L128)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:128](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L128)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [platform/agents/voice.ts:128](https://github.com/juli-os/agents/blo
 
 > `readonly` **phase**: [`CallPhase`](../type-aliases/CallPhase.md)
 
-Defined in: [platform/agents/voice.ts:133](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L133)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:133](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L133)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [platform/agents/voice.ts:133](https://github.com/juli-os/agents/blo
 
 > `readonly` **stagedPlan**: [`StagedPlan`](StagedPlan.md) \| `null`
 
-Defined in: [platform/agents/voice.ts:132](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L132)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:132](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L132)
 
 ## Methods
 
@@ -38,7 +38,7 @@ Defined in: [platform/agents/voice.ts:132](https://github.com/juli-os/agents/blo
 
 > **confirmPlan**(): `Promise`\<[`VoiceTurn`](VoiceTurn.md)\>
 
-Defined in: [platform/agents/voice.ts:130](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L130)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:130](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L130)
 
 #### Returns
 
@@ -50,7 +50,7 @@ Defined in: [platform/agents/voice.ts:130](https://github.com/juli-os/agents/blo
 
 > **denyPlan**(): [`VoiceTurn`](VoiceTurn.md)
 
-Defined in: [platform/agents/voice.ts:131](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L131)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:131](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L131)
 
 #### Returns
 
@@ -62,7 +62,7 @@ Defined in: [platform/agents/voice.ts:131](https://github.com/juli-os/agents/blo
 
 > **turn**(`text`): `Promise`\<[`VoiceTurn`](VoiceTurn.md)\>
 
-Defined in: [platform/agents/voice.ts:129](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L129)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:129](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L129)
 
 #### Parameters
 

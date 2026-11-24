@@ -6,7 +6,7 @@
 
 # Interface: Assessor
 
-Defined in: [platform/agents/tools.ts:63](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L63)
+Defined in: [peel-l0-agents/src/platform/agents/tools.ts:63](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L63)
 
 守护者评估器（guardian.go 的 tools.Assessor 对应物）。
 
@@ -16,7 +16,7 @@ Defined in: [platform/agents/tools.ts:63](https://github.com/juli-os/agents/blob
 
 > **assess**(`session`, `output`): `Promise`\<`Result`\<[`Assessment`](Assessment.md), `Error`\>\>
 
-Defined in: [platform/agents/tools.ts:64](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L64)
+Defined in: [peel-l0-agents/src/platform/agents/tools.ts:64](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L64)
 
 #### Parameters
 

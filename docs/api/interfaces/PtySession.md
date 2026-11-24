@@ -6,7 +6,7 @@
 
 # Interface: PtySession
 
-Defined in: [platform/agents/pty.ts:17](https://github.com/juli-os/agents/blob/main/src/platform/agents/pty.ts#L17)
+Defined in: baton/dist/baton/pty.d.ts:7
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/pty.ts:17](https://github.com/juli-os/agents/blob/m
 
 > `readonly` **exit**: `Promise`\<`number`\>
 
-Defined in: [platform/agents/pty.ts:20](https://github.com/juli-os/agents/blob/main/src/platform/agents/pty.ts#L20)
+Defined in: baton/dist/baton/pty.d.ts:10
 
 ## Methods
 
@@ -22,7 +22,7 @@ Defined in: [platform/agents/pty.ts:20](https://github.com/juli-os/agents/blob/m
 
 > **kill**(): `void`
 
-Defined in: [platform/agents/pty.ts:19](https://github.com/juli-os/agents/blob/main/src/platform/agents/pty.ts#L19)
+Defined in: baton/dist/baton/pty.d.ts:9
 
 #### Returns
 
@@ -34,7 +34,7 @@ Defined in: [platform/agents/pty.ts:19](https://github.com/juli-os/agents/blob/m
 
 > **write**(`data`): `void`
 
-Defined in: [platform/agents/pty.ts:18](https://github.com/juli-os/agents/blob/main/src/platform/agents/pty.ts#L18)
+Defined in: baton/dist/baton/pty.d.ts:8
 
 #### Parameters
 

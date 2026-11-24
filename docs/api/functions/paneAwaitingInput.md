@@ -8,7 +8,7 @@
 
 > **paneAwaitingInput**(`pane`): `boolean`
 
-Defined in: [platform/shared/paneFingerprint.ts:32](https://github.com/juli-os/agents/blob/main/src/platform/shared/paneFingerprint.ts#L32)
+Defined in: [peel-l0-agents/src/platform/shared/paneFingerprint.ts:32](https://github.com/juli-os/agents/blob/main/src/platform/shared/paneFingerprint.ts#L32)
 
 ## Parameters
 

@@ -6,10 +6,7 @@
 
 # Interface: SubmitStats
 
-Defined in: [platform/agents/tmux.ts:104](https://github.com/juli-os/agents/blob/main/src/platform/agents/tmux.ts#L104)
-
-提交确认的观测数据（测试器/CLI 的可见性面）：实际补了几次 Enter、
-是否触发过整段补粘贴、总耗时。
+Defined in: baton/dist/baton/tmux.d.ts:16
 
 ## Properties
 
@@ -17,7 +14,7 @@ Defined in: [platform/agents/tmux.ts:104](https://github.com/juli-os/agents/blob
 
 > `readonly` **elapsedMs**: `number`
 
-Defined in: [platform/agents/tmux.ts:107](https://github.com/juli-os/agents/blob/main/src/platform/agents/tmux.ts#L107)
+Defined in: baton/dist/baton/tmux.d.ts:19
 
 ***
 
@@ -25,7 +22,7 @@ Defined in: [platform/agents/tmux.ts:107](https://github.com/juli-os/agents/blob
 
 > `readonly` **enters**: `number`
 
-Defined in: [platform/agents/tmux.ts:105](https://github.com/juli-os/agents/blob/main/src/platform/agents/tmux.ts#L105)
+Defined in: baton/dist/baton/tmux.d.ts:17
 
 ***
 
@@ -33,4 +30,4 @@ Defined in: [platform/agents/tmux.ts:105](https://github.com/juli-os/agents/blob
 
 > `readonly` **repasted**: `boolean`
 
-Defined in: [platform/agents/tmux.ts:106](https://github.com/juli-os/agents/blob/main/src/platform/agents/tmux.ts#L106)
+Defined in: baton/dist/baton/tmux.d.ts:18

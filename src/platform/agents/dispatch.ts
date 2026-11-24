@@ -10,7 +10,7 @@
 // 报错进步 output，不再产生静默僵尸。
 
 import { realpathSync } from 'node:fs';
-import type { TmuxClient } from './tmux.ts';
+import type { TmuxClient } from '@juli-os/baton';
 import { probePane } from './pane_probe.ts';
 import { err, ok, type Result } from '../shared/result.ts';
 import { decideContextAction, type ContextGateState } from './contextGate.ts';

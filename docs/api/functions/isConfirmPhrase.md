@@ -8,7 +8,7 @@
 
 > **isConfirmPhrase**(`s`): `boolean`
 
-Defined in: [platform/agents/voice.ts:70](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L70)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:70](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L70)
 
 ## Parameters
 

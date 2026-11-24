@@ -8,7 +8,7 @@
 
 > **voiceGateHook**(`callActive`, `mode`): (`p`) => `GatePayload`
 
-Defined in: [platform/agents/voice.ts:224](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L224)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:224](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L224)
 
 ## Parameters
 

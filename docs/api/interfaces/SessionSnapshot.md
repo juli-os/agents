@@ -6,7 +6,7 @@
 
 # Interface: SessionSnapshot
 
-Defined in: [platform/agents/snapshot.ts:9](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L9)
+Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:9](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L9)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/snapshot.ts:9](https://github.com/juli-os/agents/bl
 
 > `readonly` **activeAt**: `string`
 
-Defined in: [platform/agents/snapshot.ts:13](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L13)
+Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:13](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L13)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [platform/agents/snapshot.ts:13](https://github.com/juli-os/agents/b
 
 > `readonly` **command**: `string`
 
-Defined in: [platform/agents/snapshot.ts:12](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L12)
+Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:12](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L12)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [platform/agents/snapshot.ts:12](https://github.com/juli-os/agents/b
 
 > `readonly` **hadAgent**: `boolean`
 
-Defined in: [platform/agents/snapshot.ts:15](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L15)
+Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:15](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L15)
 
 上一份快照里该会话曾有 agent（死后保留身份供恢复）。
 
@@ -40,7 +40,7 @@ Defined in: [platform/agents/snapshot.ts:15](https://github.com/juli-os/agents/b
 
 > `readonly` **name**: `string`
 
-Defined in: [platform/agents/snapshot.ts:10](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L10)
+Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:10](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L10)
 
 ***
 
@@ -48,4 +48,4 @@ Defined in: [platform/agents/snapshot.ts:10](https://github.com/juli-os/agents/b
 
 > `readonly` **workDir**: `string`
 
-Defined in: [platform/agents/snapshot.ts:11](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L11)
+Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:11](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L11)

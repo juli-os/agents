@@ -8,4 +8,4 @@
 
 > `const` **HERDR\_BIN**: `string`
 
-Defined in: [platform/agents/herdr.ts:70](https://github.com/juli-os/agents/blob/main/src/platform/agents/herdr.ts#L70)
+Defined in: baton/dist/baton/herdr.d.ts:6

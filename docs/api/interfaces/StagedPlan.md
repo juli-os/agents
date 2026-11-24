@@ -6,7 +6,7 @@
 
 # Interface: StagedPlan
 
-Defined in: [platform/agents/voice.ts:15](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L15)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:15](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L15)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/voice.ts:15](https://github.com/juli-os/agents/blob
 
 > `readonly` **brief**: `string`
 
-Defined in: [platform/agents/voice.ts:18](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L18)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:18](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L18)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [platform/agents/voice.ts:18](https://github.com/juli-os/agents/blob
 
 > `readonly` **session**: `string`
 
-Defined in: [platform/agents/voice.ts:16](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L16)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:16](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L16)
 
 ***
 
@@ -30,4 +30,4 @@ Defined in: [platform/agents/voice.ts:16](https://github.com/juli-os/agents/blob
 
 > `readonly` **summary**: `string`
 
-Defined in: [platform/agents/voice.ts:17](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L17)
+Defined in: [peel-l0-agents/src/platform/agents/voice.ts:17](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L17)

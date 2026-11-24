@@ -8,7 +8,7 @@
 
 > **parseSkillUsedStdin**(`raw`): \{ `skill`: `string`; `tool_name`: `string`; \} \| `null`
 
-Defined in: [platform/agents/transcript.ts:39](https://github.com/juli-os/agents/blob/main/src/platform/agents/transcript.ts#L39)
+Defined in: [peel-l0-agents/src/platform/agents/transcript.ts:39](https://github.com/juli-os/agents/blob/main/src/platform/agents/transcript.ts#L39)
 
 skill-used 动词的 stdin 契约（PostToolUse，matcher ^(Skill$|skill__)）：
 格式 A（Claude Code 实测 2026-10-04）：tool_name="Skill"（工具名），skill 名

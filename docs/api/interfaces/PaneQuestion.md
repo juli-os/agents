@@ -6,7 +6,7 @@
 
 # Interface: PaneQuestion
 
-Defined in: [platform/shared/paneFingerprint.ts:39](https://github.com/juli-os/agents/blob/main/src/platform/shared/paneFingerprint.ts#L39)
+Defined in: [peel-l0-agents/src/platform/shared/paneFingerprint.ts:39](https://github.com/juli-os/agents/blob/main/src/platform/shared/paneFingerprint.ts#L39)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/shared/paneFingerprint.ts:39](https://github.com/juli-os/a
 
 > `readonly` **options**: readonly [`PaneQuestionOption`](PaneQuestionOption.md)[]
 
-Defined in: [platform/shared/paneFingerprint.ts:41](https://github.com/juli-os/agents/blob/main/src/platform/shared/paneFingerprint.ts#L41)
+Defined in: [peel-l0-agents/src/platform/shared/paneFingerprint.ts:41](https://github.com/juli-os/agents/blob/main/src/platform/shared/paneFingerprint.ts#L41)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [platform/shared/paneFingerprint.ts:41](https://github.com/juli-os/a
 
 > `readonly` **question**: `string`
 
-Defined in: [platform/shared/paneFingerprint.ts:40](https://github.com/juli-os/agents/blob/main/src/platform/shared/paneFingerprint.ts#L40)
+Defined in: [peel-l0-agents/src/platform/shared/paneFingerprint.ts:40](https://github.com/juli-os/agents/blob/main/src/platform/shared/paneFingerprint.ts#L40)

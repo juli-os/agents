@@ -8,7 +8,7 @@
 
 > **loadSnapshot**(`file`): [`Snapshot`](../interfaces/Snapshot.md) \| `null`
 
-Defined in: [platform/agents/snapshot.ts:35](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L35)
+Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:35](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L35)
 
 ## Parameters
 

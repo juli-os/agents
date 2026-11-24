@@ -6,7 +6,7 @@
 
 # Interface: AcpExecutor
 
-Defined in: [platform/agents/acp.ts:57](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L57)
+Defined in: [peel-l0-agents/src/platform/agents/acp.ts:57](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L57)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [platform/agents/acp.ts:57](https://github.com/juli-os/agents/blob/m
 
 > `readonly` **dispatchSync**: (`source`, `session`, `text`) => `Promise`\<`Result`\<`string`, `Error`\>\>
 
-Defined in: [platform/agents/acp.ts:58](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L58)
+Defined in: [peel-l0-agents/src/platform/agents/acp.ts:58](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L58)
 
 #### Parameters
 
@@ -40,7 +40,7 @@ Defined in: [platform/agents/acp.ts:58](https://github.com/juli-os/agents/blob/m
 
 > **alive**(): `boolean`
 
-Defined in: [platform/agents/acp.ts:60](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L60)
+Defined in: [peel-l0-agents/src/platform/agents/acp.ts:60](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L60)
 
 #### Returns
 
@@ -52,7 +52,7 @@ Defined in: [platform/agents/acp.ts:60](https://github.com/juli-os/agents/blob/m
 
 > **interrupt**(`session`): `Promise`\<`Result`\<`void`, `Error`\>\>
 
-Defined in: [platform/agents/acp.ts:59](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L59)
+Defined in: [peel-l0-agents/src/platform/agents/acp.ts:59](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L59)
 
 #### Parameters
 
@@ -70,7 +70,7 @@ Defined in: [platform/agents/acp.ts:59](https://github.com/juli-os/agents/blob/m
 
 > **stop**(): `void`
 
-Defined in: [platform/agents/acp.ts:61](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L61)
+Defined in: [peel-l0-agents/src/platform/agents/acp.ts:61](https://github.com/juli-os/agents/blob/main/src/platform/agents/acp.ts#L61)
 
 #### Returns
 
