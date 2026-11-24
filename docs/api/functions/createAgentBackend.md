@@ -8,13 +8,16 @@
 
 > **createAgentBackend**(`opts?`): [`AgentBackend`](../interfaces/AgentBackend.md)
 
-Defined in: [platform/agents/backend.ts:67](https://github.com/juli-os/agents/blob/main/src/platform/agents/backend.ts#L67)
+Defined in: [src/index.ts:35](https://github.com/juli-os/agents/blob/main/src/index.ts#L35)
+
+终端后端工厂（tmux|herdr，实现在 @juli-os/baton）——同签名同行为：包装层
+把本包的 defaultHookSpecs 注入 baton 的 hookSpecs 参数（六事件表只此一处）。
 
 ## Parameters
 
 ### opts?
 
-`AgentBackendOpts` = `{}`
+[`AgentBackendOpts`](../interfaces/AgentBackendOpts.md) = `{}`
 
 ## Returns
 

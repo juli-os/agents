@@ -8,7 +8,7 @@
 
 > **registerDefaultCommands**(`registry`, `deps`): `void`
 
-Defined in: [platform/agents/orchestrator.ts:95](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L95)
+Defined in: [src/platform/agents/orchestrator.ts:95](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L95)
 
 ## Parameters
 

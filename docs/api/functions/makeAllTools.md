@@ -8,7 +8,7 @@
 
 > **makeAllTools**(`deps`): readonly [`Tool`](../interfaces/Tool.md)[]
 
-Defined in: [platform/agents/tools.ts:410](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L410)
+Defined in: [src/platform/agents/tools.ts:410](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L410)
 
 ## Parameters
 

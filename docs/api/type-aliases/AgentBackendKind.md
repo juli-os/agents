@@ -8,4 +8,4 @@
 
 > **AgentBackendKind** = `"tmux"` \| `"herdr"`
 
-Defined in: [platform/agents/backend.ts:28](https://github.com/juli-os/agents/blob/main/src/platform/agents/backend.ts#L28)
+Defined in: node\_modules/@juli-os/baton/dist/baton/backend.d.ts:5

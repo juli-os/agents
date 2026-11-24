@@ -6,7 +6,7 @@
 
 # Interface: AgentBackend
 
-Defined in: [platform/agents/backend.ts:49](https://github.com/juli-os/agents/blob/main/src/platform/agents/backend.ts#L49)
+Defined in: node\_modules/@juli-os/baton/dist/baton/backend.d.ts:16
 
 ## Properties
 
@@ -14,9 +14,7 @@ Defined in: [platform/agents/backend.ts:49](https://github.com/juli-os/agents/bl
 
 > `readonly` **describe**: `string`
 
-Defined in: [platform/agents/backend.ts:52](https://github.com/juli-os/agents/blob/main/src/platform/agents/backend.ts#L52)
-
-人读描述（warmup/诊断日志）：`tmux socket=default` / `herdr session=juli`。
+Defined in: node\_modules/@juli-os/baton/dist/baton/backend.d.ts:18
 
 ***
 
@@ -24,7 +22,7 @@ Defined in: [platform/agents/backend.ts:52](https://github.com/juli-os/agents/bl
 
 > `readonly` **kind**: [`AgentBackendKind`](../type-aliases/AgentBackendKind.md)
 
-Defined in: [platform/agents/backend.ts:50](https://github.com/juli-os/agents/blob/main/src/platform/agents/backend.ts#L50)
+Defined in: node\_modules/@juli-os/baton/dist/baton/backend.d.ts:17
 
 ***
 
@@ -32,9 +30,7 @@ Defined in: [platform/agents/backend.ts:50](https://github.com/juli-os/agents/bl
 
 > `readonly` **terminal**: [`TmuxClient`](TmuxClient.md)
 
-Defined in: [platform/agents/backend.ts:54](https://github.com/juli-os/agents/blob/main/src/platform/agents/backend.ts#L54)
-
-终端契约——派发/探测/快照管线的唯一消费面。
+Defined in: node\_modules/@juli-os/baton/dist/baton/backend.d.ts:19
 
 ## Methods
 
@@ -42,9 +38,7 @@ Defined in: [platform/agents/backend.ts:54](https://github.com/juli-os/agents/bl
 
 > **applyEnv**(`vars`): `void`
 
-Defined in: [platform/agents/backend.ts:64](https://github.com/juli-os/agents/blob/main/src/platform/agents/backend.ts#L64)
-
-AI 段 env 注入（[key, value] 对）。
+Defined in: node\_modules/@juli-os/baton/dist/baton/backend.d.ts:24
 
 #### Parameters
 
@@ -62,9 +56,7 @@ readonly (readonly \[`string`, `string`\])[]
 
 > **attach**(`session`, `opts`, `onData?`): `Promise`\<`Result`\<[`PtySession`](PtySession.md), `Error`\>\>
 
-Defined in: [platform/agents/backend.ts:60](https://github.com/juli-os/agents/blob/main/src/platform/agents/backend.ts#L60)
-
-web 终端 attach：会话不存在明确报错、不代建。
+Defined in: node\_modules/@juli-os/baton/dist/baton/backend.d.ts:22
 
 #### Parameters
 
@@ -90,9 +82,7 @@ web 终端 attach：会话不存在明确报错、不代建。
 
 > **bootCommand**(`base`, `session`): `string`
 
-Defined in: [platform/agents/backend.ts:62](https://github.com/juli-os/agents/blob/main/src/platform/agents/backend.ts#L62)
-
-引导命令包装：base=引擎选好的 claude 启动命令，session=目标会话名。
+Defined in: node\_modules/@juli-os/baton/dist/baton/backend.d.ts:23
 
 #### Parameters
 
@@ -112,11 +102,9 @@ Defined in: [platform/agents/backend.ts:62](https://github.com/juli-os/agents/bl
 
 ### hookSpecs()
 
-> **hookSpecs**(`hookJsPath`, `password`, `serviceUrl`): readonly [`HookSpec`](HookSpec.md)[]
+> **hookSpecs**(`hookJsPath`, `password`, `serviceUrl`): readonly `HookSpec`[]
 
-Defined in: [platform/agents/backend.ts:56](https://github.com/juli-os/agents/blob/main/src/platform/agents/backend.ts#L56)
-
-CC hook 命令组（installClaudeHooks 的入参）。
+Defined in: node\_modules/@juli-os/baton/dist/baton/backend.d.ts:20
 
 #### Parameters
 
@@ -134,7 +122,7 @@ CC hook 命令组（installClaudeHooks 的入参）。
 
 #### Returns
 
-readonly [`HookSpec`](HookSpec.md)[]
+readonly `HookSpec`[]
 
 ***
 
@@ -142,9 +130,7 @@ readonly [`HookSpec`](HookSpec.md)[]
 
 > **listSync**(): readonly `string`[]
 
-Defined in: [platform/agents/backend.ts:58](https://github.com/juli-os/agents/blob/main/src/platform/agents/backend.ts#L58)
-
-会话名单同步源（router listSync；失败/缺席归一空名单）。
+Defined in: node\_modules/@juli-os/baton/dist/baton/backend.d.ts:21
 
 #### Returns
 

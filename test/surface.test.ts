@@ -29,8 +29,6 @@ test('facade value-export surface matches the explicit snapshot list', () => {
     'parseHookStdin', 'parseSkillUsedStdin', 'extractFinalMessage',
     // skills
     'parseSkill', 'loadSkills', 'expandPrompt', 'createSkillRegistry',
-    // acp
-    'createAcpExecutor',
     // contextGate
     'decideContextAction', 'DEFAULT_COMPACT_THRESHOLD', 'DEFAULT_COMPACT_COOLDOWN_MS',
     // tools

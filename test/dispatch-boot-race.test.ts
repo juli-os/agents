@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { ok } from '../src/platform/shared/result.ts';
 import { createProvisioningDispatch } from '../src/platform/agents/dispatch.ts';
-import type { TmuxClient } from '../src/platform/agents/tmux.ts';
+import type { TmuxClient } from '@juli-os/baton';
 
 const READY = '✳ ready\n❯ ';
 
