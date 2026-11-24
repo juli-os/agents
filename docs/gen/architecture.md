@@ -12,11 +12,11 @@ flowchart LR
   n2["platform/agents"]
   n3["platform/shared"]
   n0 -->|1| n1
-  n0 -->|13| n2
+  n0 -->|12| n2
   n0 -->|1| n3
   n1 -->|1| n3
-  n2 -->|4| n1
-  n2 -->|13| n3
+  n2 -->|3| n1
+  n2 -->|12| n3
   x0:::external["@juli-os/baton"]
   n0 -.->|5| x0
   n2 -.->|5| x0

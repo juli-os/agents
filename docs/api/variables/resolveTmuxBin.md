@@ -8,7 +8,7 @@
 
 > `const` **resolveTmuxBin**: (`pathEnv?`, `exists?`) => `string`
 
-Defined in: baton/dist/baton/tmux.d.ts:2
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:2
 
 ## Parameters
 

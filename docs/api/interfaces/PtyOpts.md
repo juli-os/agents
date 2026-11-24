@@ -6,7 +6,7 @@
 
 # Interface: PtyOpts
 
-Defined in: baton/dist/baton/pty.d.ts:2
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:2
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: baton/dist/baton/pty.d.ts:2
 
 > `readonly` `optional` **cols?**: `number`
 
-Defined in: baton/dist/baton/pty.d.ts:3
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:3
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: baton/dist/baton/pty.d.ts:3
 
 > `readonly` `optional` **env?**: `Readonly`\<`Record`\<`string`, `string`\>\>
 
-Defined in: baton/dist/baton/pty.d.ts:5
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:5
 
 ***
 
@@ -30,4 +30,4 @@ Defined in: baton/dist/baton/pty.d.ts:5
 
 > `readonly` `optional` **rows?**: `number`
 
-Defined in: baton/dist/baton/pty.d.ts:4
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:4

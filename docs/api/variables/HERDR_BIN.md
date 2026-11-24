@@ -8,4 +8,4 @@
 
 > `const` **HERDR\_BIN**: `string`
 
-Defined in: baton/dist/baton/herdr.d.ts:6
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:6

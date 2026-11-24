@@ -8,7 +8,7 @@
 
 > `const` **promptFingerprints**: (`text`) => `object`
 
-Defined in: baton/dist/baton/tmux.d.ts:11
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:11
 
 ## Parameters
 

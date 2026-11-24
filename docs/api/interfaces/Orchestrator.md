@@ -6,7 +6,7 @@
 
 # Interface: Orchestrator
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:196](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L196)
+Defined in: [src/platform/agents/orchestrator.ts:196](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L196)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:196](https://git
 
 > `readonly` **commands**: [`CommandRegistry`](CommandRegistry.md)
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:201](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L201)
+Defined in: [src/platform/agents/orchestrator.ts:201](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L201)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:201](https://git
 
 > `readonly` **hooks**: [`HookManager`](HookManager.md)
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:202](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L202)
+Defined in: [src/platform/agents/orchestrator.ts:202](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L202)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:202](https://git
 
 > `readonly` **messages**: readonly [`ChatMessage`](ChatMessage.md)[]
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:199](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L199)
+Defined in: [src/platform/agents/orchestrator.ts:199](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L199)
 
 ## Methods
 
@@ -38,7 +38,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:199](https://git
 
 > **handle**(`input`, `emit`): `Promise`\<`void`\>
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:198](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L198)
+Defined in: [src/platform/agents/orchestrator.ts:198](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L198)
 
 处理一条用户输入：slash 命令分流或完整 tool-calling 循环。
 
@@ -62,7 +62,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:198](https://git
 
 > **reset**(): `void`
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:200](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L200)
+Defined in: [src/platform/agents/orchestrator.ts:200](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L200)
 
 #### Returns
 

@@ -8,7 +8,7 @@
 
 > `const` **inputBoxState**: (`pane`, `tail`) => `"cleared"` \| `"in-box"` \| `"absent"`
 
-Defined in: baton/dist/baton/tmux.d.ts:15
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:15
 
 ## Parameters
 

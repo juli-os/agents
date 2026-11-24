@@ -8,7 +8,7 @@
 
 > `const` **tmuxEnv**: () => `NodeJS.ProcessEnv`
 
-Defined in: baton/dist/baton/tmux.d.ts:4
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:4
 
 ## Returns
 

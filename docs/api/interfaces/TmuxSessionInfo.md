@@ -6,7 +6,7 @@
 
 # Interface: TmuxSessionInfo
 
-Defined in: baton/dist/baton/tmux.d.ts:5
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:5
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: baton/dist/baton/tmux.d.ts:5
 
 > `readonly` **attached**: `boolean`
 
-Defined in: baton/dist/baton/tmux.d.ts:7
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:7
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: baton/dist/baton/tmux.d.ts:7
 
 > `readonly` **cmd**: `string`
 
-Defined in: baton/dist/baton/tmux.d.ts:9
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:9
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: baton/dist/baton/tmux.d.ts:9
 
 > `readonly` **name**: `string`
 
-Defined in: baton/dist/baton/tmux.d.ts:6
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:6
 
 ***
 
@@ -38,4 +38,4 @@ Defined in: baton/dist/baton/tmux.d.ts:6
 
 > `readonly` **path**: `string`
 
-Defined in: baton/dist/baton/tmux.d.ts:8
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:8

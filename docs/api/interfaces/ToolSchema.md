@@ -6,7 +6,7 @@
 
 # Interface: ToolSchema
 
-Defined in: [peel-l0-agents/src/contracts/ports.ts:13](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L13)
+Defined in: [src/contracts/ports.ts:8](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L8)
 
 LLM 工具的 JSON Schema（parameters）。
 
@@ -16,7 +16,7 @@ LLM 工具的 JSON Schema（parameters）。
 
 > `readonly` **description**: `string`
 
-Defined in: [peel-l0-agents/src/contracts/ports.ts:15](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L15)
+Defined in: [src/contracts/ports.ts:10](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L10)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [peel-l0-agents/src/contracts/ports.ts:15](https://github.com/juli-o
 
 > `readonly` **name**: `string`
 
-Defined in: [peel-l0-agents/src/contracts/ports.ts:14](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L14)
+Defined in: [src/contracts/ports.ts:9](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L9)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: [peel-l0-agents/src/contracts/ports.ts:14](https://github.com/juli-o
 
 > `readonly` **parameters**: `Record`\<`string`, `unknown`\>
 
-Defined in: [peel-l0-agents/src/contracts/ports.ts:16](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L16)
+Defined in: [src/contracts/ports.ts:11](https://github.com/juli-os/agents/blob/main/src/contracts/ports.ts#L11)

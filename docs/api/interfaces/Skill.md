@@ -6,7 +6,7 @@
 
 # Interface: Skill
 
-Defined in: [peel-l0-agents/src/platform/agents/skills.ts:8](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L8)
+Defined in: [src/platform/agents/skills.ts:8](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L8)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [peel-l0-agents/src/platform/agents/skills.ts:8](https://github.com/
 
 > `readonly` **allowedTools**: readonly `string`[]
 
-Defined in: [peel-l0-agents/src/platform/agents/skills.ts:12](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L12)
+Defined in: [src/platform/agents/skills.ts:12](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L12)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [peel-l0-agents/src/platform/agents/skills.ts:12](https://github.com
 
 > `readonly` **description**: `string`
 
-Defined in: [peel-l0-agents/src/platform/agents/skills.ts:10](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L10)
+Defined in: [src/platform/agents/skills.ts:10](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L10)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [peel-l0-agents/src/platform/agents/skills.ts:10](https://github.com
 
 > `readonly` **name**: `string`
 
-Defined in: [peel-l0-agents/src/platform/agents/skills.ts:9](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L9)
+Defined in: [src/platform/agents/skills.ts:9](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L9)
 
 ***
 
@@ -38,4 +38,4 @@ Defined in: [peel-l0-agents/src/platform/agents/skills.ts:9](https://github.com/
 
 > `readonly` **prompt**: `string`
 
-Defined in: [peel-l0-agents/src/platform/agents/skills.ts:11](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L11)
+Defined in: [src/platform/agents/skills.ts:11](https://github.com/juli-os/agents/blob/main/src/platform/agents/skills.ts#L11)

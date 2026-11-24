@@ -6,7 +6,7 @@
 
 # Interface: SlashCommand
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:66](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L66)
+Defined in: [src/platform/agents/orchestrator.ts:66](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L66)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:66](https://gith
 
 > `readonly` **description**: `string`
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:69](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L69)
+Defined in: [src/platform/agents/orchestrator.ts:69](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L69)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:69](https://gith
 
 > `readonly` **name**: `string`
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:67](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L67)
+Defined in: [src/platform/agents/orchestrator.ts:67](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L67)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:67](https://gith
 
 > `readonly` **run**: (`args`, `emit`) => `Promise`\<`void`\>
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:70](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L70)
+Defined in: [src/platform/agents/orchestrator.ts:70](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L70)
 
 #### Parameters
 
@@ -52,4 +52,4 @@ readonly `string`[]
 
 > `readonly` **usage**: `string`
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:68](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L68)
+Defined in: [src/platform/agents/orchestrator.ts:68](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L68)

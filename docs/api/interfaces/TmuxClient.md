@@ -6,11 +6,7 @@
 
 # Interface: TmuxClient
 
-Defined in: baton/dist/baton/tmux.d.ts:22
-
-## Extended by
-
-- [`HerdrClient`](HerdrClient.md)
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:22
 
 ## Extended by
 
@@ -22,7 +18,7 @@ Defined in: baton/dist/baton/tmux.d.ts:22
 
 > `readonly` `optional` **socketPath?**: `string`
 
-Defined in: baton/dist/baton/tmux.d.ts:23
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:23
 
 ## Methods
 
@@ -30,7 +26,7 @@ Defined in: baton/dist/baton/tmux.d.ts:23
 
 > **capturePane**(`name`, `lines?`): `Promise`\<`Result`\<`string`, `Error`\>\>
 
-Defined in: baton/dist/baton/tmux.d.ts:38
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:38
 
 #### Parameters
 
@@ -52,7 +48,7 @@ Defined in: baton/dist/baton/tmux.d.ts:38
 
 > **foregroundCommandOf**(`name`): `Promise`\<`string`\>
 
-Defined in: baton/dist/baton/tmux.d.ts:26
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:26
 
 #### Parameters
 
@@ -70,7 +66,7 @@ Defined in: baton/dist/baton/tmux.d.ts:26
 
 > **hasSession**(`name`): `Promise`\<`boolean`\>
 
-Defined in: baton/dist/baton/tmux.d.ts:24
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:24
 
 #### Parameters
 
@@ -88,7 +84,7 @@ Defined in: baton/dist/baton/tmux.d.ts:24
 
 > **interrupt**(`name`): `Promise`\<`Result`\<`void`, `Error`\>\>
 
-Defined in: baton/dist/baton/tmux.d.ts:40
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:40
 
 #### Parameters
 
@@ -106,7 +102,7 @@ Defined in: baton/dist/baton/tmux.d.ts:40
 
 > **killSession**(`name`): `Promise`\<`Result`\<`void`, `Error`\>\>
 
-Defined in: baton/dist/baton/tmux.d.ts:39
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:39
 
 #### Parameters
 
@@ -124,7 +120,7 @@ Defined in: baton/dist/baton/tmux.d.ts:39
 
 > **listSessions**(): `Promise`\<readonly `string`[]\>
 
-Defined in: baton/dist/baton/tmux.d.ts:30
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:30
 
 #### Returns
 
@@ -136,7 +132,7 @@ Defined in: baton/dist/baton/tmux.d.ts:30
 
 > **listSessionsDetailed**(): `Promise`\<`Result`\<readonly [`TmuxSessionInfo`](TmuxSessionInfo.md)[], `Error`\>\>
 
-Defined in: baton/dist/baton/tmux.d.ts:31
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:31
 
 #### Returns
 
@@ -148,7 +144,7 @@ Defined in: baton/dist/baton/tmux.d.ts:31
 
 > **newSession**(`name`, `cwd?`): `Promise`\<`Result`\<`void`, `Error`\>\>
 
-Defined in: baton/dist/baton/tmux.d.ts:32
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:32
 
 #### Parameters
 
@@ -170,7 +166,7 @@ Defined in: baton/dist/baton/tmux.d.ts:32
 
 > **panePathOf**(`name`): `Promise`\<`string`\>
 
-Defined in: baton/dist/baton/tmux.d.ts:27
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:27
 
 #### Parameters
 
@@ -188,7 +184,7 @@ Defined in: baton/dist/baton/tmux.d.ts:27
 
 > **sendKey**(`name`, `key`): `Promise`\<`Result`\<`void`, `Error`\>\>
 
-Defined in: baton/dist/baton/tmux.d.ts:25
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:25
 
 #### Parameters
 
@@ -210,7 +206,7 @@ Defined in: baton/dist/baton/tmux.d.ts:25
 
 > **sendText**(`name`, `text`): `Promise`\<`Result`\<`void`, `Error`\>\>
 
-Defined in: baton/dist/baton/tmux.d.ts:33
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:33
 
 #### Parameters
 
@@ -232,7 +228,7 @@ Defined in: baton/dist/baton/tmux.d.ts:33
 
 > **sendTextConfirmed**(`name`, `text`): `Promise`\<`Result`\<[`SubmitStats`](SubmitStats.md), `Error`\>\>
 
-Defined in: baton/dist/baton/tmux.d.ts:34
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:34
 
 #### Parameters
 
@@ -254,7 +250,7 @@ Defined in: baton/dist/baton/tmux.d.ts:34
 
 > **sendTextQueued**(`name`, `text`): `Promise`\<`Result`\<[`SubmitStats`](SubmitStats.md) & `object`, `Error`\>\>
 
-Defined in: baton/dist/baton/tmux.d.ts:35
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:35
 
 #### Parameters
 
@@ -276,7 +272,7 @@ Defined in: baton/dist/baton/tmux.d.ts:35
 
 > **sessionBirthsOf**(): `Promise`\<`ReadonlyMap`\<`string`, `number`\>\>
 
-Defined in: baton/dist/baton/tmux.d.ts:28
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:28
 
 #### Returns
 
@@ -288,7 +284,7 @@ Defined in: baton/dist/baton/tmux.d.ts:28
 
 > **setEnv**(`vars`): `Promise`\<`Result`\<`void`, `Error`\>\>
 
-Defined in: baton/dist/baton/tmux.d.ts:29
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:29
 
 #### Parameters
 

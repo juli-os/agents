@@ -6,7 +6,7 @@
 
 # Interface: VoiceEvent
 
-Defined in: [peel-l0-agents/src/platform/agents/voice.ts:109](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L109)
+Defined in: [src/platform/agents/voice.ts:109](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L109)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [peel-l0-agents/src/platform/agents/voice.ts:109](https://github.com
 
 > `readonly` **data**: `string`
 
-Defined in: [peel-l0-agents/src/platform/agents/voice.ts:111](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L111)
+Defined in: [src/platform/agents/voice.ts:111](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L111)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [peel-l0-agents/src/platform/agents/voice.ts:111](https://github.com
 
 > `readonly` **type**: `"chat:plan"` \| `"chat:phase"` \| `"chat:dispatched"` \| `"chat:error"` \| `"chat:system"`
 
-Defined in: [peel-l0-agents/src/platform/agents/voice.ts:110](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L110)
+Defined in: [src/platform/agents/voice.ts:110](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L110)

@@ -8,7 +8,7 @@
 
 > `const` **createTmuxClient**: (`opts?`) => [`TmuxClient`](../interfaces/TmuxClient.md)
 
-Defined in: baton/dist/baton/tmux.d.ts:42
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:42
 
 ## Parameters
 

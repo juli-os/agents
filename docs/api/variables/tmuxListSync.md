@@ -8,7 +8,7 @@
 
 > `const` **tmuxListSync**: (`socketPath?`) => readonly `string`[]
 
-Defined in: baton/dist/baton/router.d.ts:1
+Defined in: node\_modules/@juli-os/baton/dist/baton/router.d.ts:1
 
 ## Parameters
 

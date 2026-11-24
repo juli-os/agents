@@ -6,7 +6,7 @@
 
 # Interface: CommandRegistry
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:73](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L73)
+Defined in: [src/platform/agents/orchestrator.ts:73](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L73)
 
 ## Methods
 
@@ -14,7 +14,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:73](https://gith
 
 > **all**(): readonly [`SlashCommand`](SlashCommand.md)[]
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:76](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L76)
+Defined in: [src/platform/agents/orchestrator.ts:76](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L76)
 
 #### Returns
 
@@ -26,7 +26,7 @@ readonly [`SlashCommand`](SlashCommand.md)[]
 
 > **help**(): `string`
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:77](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L77)
+Defined in: [src/platform/agents/orchestrator.ts:77](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L77)
 
 #### Returns
 
@@ -38,7 +38,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:77](https://gith
 
 > **match**(`input`): [`SlashCommand`](SlashCommand.md) \| `null`
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:75](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L75)
+Defined in: [src/platform/agents/orchestrator.ts:75](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L75)
 
 #### Parameters
 
@@ -56,7 +56,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:75](https://gith
 
 > **register**(`cmd`): `void`
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:74](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L74)
+Defined in: [src/platform/agents/orchestrator.ts:74](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L74)
 
 #### Parameters
 

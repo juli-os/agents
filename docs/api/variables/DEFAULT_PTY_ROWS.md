@@ -8,4 +8,4 @@
 
 > `const` **DEFAULT\_PTY\_ROWS**: `32` = `32`
 
-Defined in: baton/dist/baton/pty.d.ts:13
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:13

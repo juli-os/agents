@@ -6,7 +6,7 @@
 
 # Interface: SubmitStats
 
-Defined in: baton/dist/baton/tmux.d.ts:16
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:16
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: baton/dist/baton/tmux.d.ts:16
 
 > `readonly` **elapsedMs**: `number`
 
-Defined in: baton/dist/baton/tmux.d.ts:19
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:19
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: baton/dist/baton/tmux.d.ts:19
 
 > `readonly` **enters**: `number`
 
-Defined in: baton/dist/baton/tmux.d.ts:17
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:17
 
 ***
 
@@ -30,4 +30,4 @@ Defined in: baton/dist/baton/tmux.d.ts:17
 
 > `readonly` **repasted**: `boolean`
 
-Defined in: baton/dist/baton/tmux.d.ts:18
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:18

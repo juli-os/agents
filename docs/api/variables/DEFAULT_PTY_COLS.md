@@ -8,4 +8,4 @@
 
 > `const` **DEFAULT\_PTY\_COLS**: `120` = `120`
 
-Defined in: baton/dist/baton/pty.d.ts:12
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:12

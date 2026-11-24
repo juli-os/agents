@@ -8,7 +8,7 @@
 
 > `const` **herdrSocketPath**: (`session`) => `string`
 
-Defined in: baton/dist/baton/herdr.d.ts:7
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:7
 
 ## Parameters
 

@@ -6,7 +6,7 @@
 
 # Interface: HerdrManagedAgentStart
 
-Defined in: baton/dist/baton/herdr.d.ts:38
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:38
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: baton/dist/baton/herdr.d.ts:38
 
 > `readonly` `optional` **args?**: readonly `string`[]
 
-Defined in: baton/dist/baton/herdr.d.ts:41
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:41
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: baton/dist/baton/herdr.d.ts:41
 
 > `readonly` **kind**: `string`
 
-Defined in: baton/dist/baton/herdr.d.ts:40
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:40
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: baton/dist/baton/herdr.d.ts:40
 
 > `readonly` **name**: `string`
 
-Defined in: baton/dist/baton/herdr.d.ts:39
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:39
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: baton/dist/baton/herdr.d.ts:39
 
 > `readonly` `optional` **shellSettleMs?**: `number`
 
-Defined in: baton/dist/baton/herdr.d.ts:43
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:43
 
 ***
 
@@ -46,4 +46,4 @@ Defined in: baton/dist/baton/herdr.d.ts:43
 
 > `readonly` `optional` **timeoutMs?**: `number`
 
-Defined in: baton/dist/baton/herdr.d.ts:42
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:42

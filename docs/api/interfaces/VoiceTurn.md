@@ -6,7 +6,7 @@
 
 # Interface: VoiceTurn
 
-Defined in: [peel-l0-agents/src/platform/agents/voice.ts:122](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L122)
+Defined in: [src/platform/agents/voice.ts:122](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L122)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [peel-l0-agents/src/platform/agents/voice.ts:122](https://github.com
 
 > `readonly` **events**: [`VoiceEvent`](VoiceEvent.md)[]
 
-Defined in: [peel-l0-agents/src/platform/agents/voice.ts:123](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L123)
+Defined in: [src/platform/agents/voice.ts:123](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L123)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [peel-l0-agents/src/platform/agents/voice.ts:123](https://github.com
 
 > `readonly` **reply**: `string`
 
-Defined in: [peel-l0-agents/src/platform/agents/voice.ts:124](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L124)
+Defined in: [src/platform/agents/voice.ts:124](https://github.com/juli-os/agents/blob/main/src/platform/agents/voice.ts#L124)

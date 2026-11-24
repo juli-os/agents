@@ -8,7 +8,7 @@
 
 > `const` **createPty**: (`cmd`, `opts?`, `onData?`) => [`PtySession`](../interfaces/PtySession.md)
 
-Defined in: baton/dist/baton/pty.d.ts:14
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:14
 
 ## Parameters
 

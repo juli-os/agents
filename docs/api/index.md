@@ -6,8 +6,8 @@
 
 ## Interfaces
 
-- [AcpDeps](interfaces/AcpDeps.md)
-- [AcpExecutor](interfaces/AcpExecutor.md)
+- [AgentBackend](interfaces/AgentBackend.md)
+- [AgentBackendOpts](interfaces/AgentBackendOpts.md)
 - [Assessment](interfaces/Assessment.md)
 - [Assessor](interfaces/Assessor.md)
 - [CallModeConfig](interfaces/CallModeConfig.md)
@@ -42,7 +42,6 @@
 - [SnapshotDeps](interfaces/SnapshotDeps.md)
 - [StagedPlan](interfaces/StagedPlan.md)
 - [SubmitStats](interfaces/SubmitStats.md)
-- [SyncDispatcherPort](interfaces/SyncDispatcherPort.md)
 - [TmuxClient](interfaces/TmuxClient.md)
 - [TmuxSessionInfo](interfaces/TmuxSessionInfo.md)
 - [Tool](interfaces/Tool.md)
@@ -57,6 +56,7 @@
 
 ## Type Aliases
 
+- [AgentBackendKind](type-aliases/AgentBackendKind.md)
 - [CallMode](type-aliases/CallMode.md)
 - [CallPhase](type-aliases/CallPhase.md)
 - [ContextAction](type-aliases/ContextAction.md)
@@ -91,7 +91,6 @@
 
 ## Functions
 
-- [createAcpExecutor](functions/createAcpExecutor.md)
 - [createAgentBackend](functions/createAgentBackend.md)
 - [createCommandRegistry](functions/createCommandRegistry.md)
 - [createHookManager](functions/createHookManager.md)

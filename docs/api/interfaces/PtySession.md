@@ -6,7 +6,7 @@
 
 # Interface: PtySession
 
-Defined in: baton/dist/baton/pty.d.ts:7
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:7
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: baton/dist/baton/pty.d.ts:7
 
 > `readonly` **exit**: `Promise`\<`number`\>
 
-Defined in: baton/dist/baton/pty.d.ts:10
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:10
 
 ## Methods
 
@@ -22,7 +22,7 @@ Defined in: baton/dist/baton/pty.d.ts:10
 
 > **kill**(): `void`
 
-Defined in: baton/dist/baton/pty.d.ts:9
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:9
 
 #### Returns
 
@@ -34,7 +34,7 @@ Defined in: baton/dist/baton/pty.d.ts:9
 
 > **write**(`data`): `void`
 
-Defined in: baton/dist/baton/pty.d.ts:8
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:8
 
 #### Parameters
 

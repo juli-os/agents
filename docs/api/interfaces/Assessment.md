@@ -6,15 +6,15 @@
 
 # Interface: Assessment
 
-Defined in: [peel-l0-agents/src/platform/agents/tools.ts:57](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L57)
+Defined in: [src/platform/agents/tools.ts:57](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L57)
 
 ## Properties
 
 ### decision
 
-> `readonly` **decision**: `"unknown"` \| `"idle"` \| `"approve"` \| `"reject"`
+> `readonly` **decision**: `"approve"` \| `"reject"` \| `"idle"` \| `"unknown"`
 
-Defined in: [peel-l0-agents/src/platform/agents/tools.ts:58](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L58)
+Defined in: [src/platform/agents/tools.ts:58](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L58)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [peel-l0-agents/src/platform/agents/tools.ts:58](https://github.com/
 
 > `readonly` **reason**: `string`
 
-Defined in: [peel-l0-agents/src/platform/agents/tools.ts:59](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L59)
+Defined in: [src/platform/agents/tools.ts:59](https://github.com/juli-os/agents/blob/main/src/platform/agents/tools.ts#L59)

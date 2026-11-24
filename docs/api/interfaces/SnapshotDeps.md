@@ -6,7 +6,7 @@
 
 # Interface: SnapshotDeps
 
-Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:23](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L23)
+Defined in: [src/platform/agents/snapshot.ts:23](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L23)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:23](https://github.c
 
 > `readonly` `optional` **clock?**: () => `Date`
 
-Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:26](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L26)
+Defined in: [src/platform/agents/snapshot.ts:26](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L26)
 
 #### Returns
 
@@ -26,7 +26,7 @@ Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:26](https://github.c
 
 > `readonly` **file**: `string`
 
-Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:25](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L25)
+Defined in: [src/platform/agents/snapshot.ts:25](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L25)
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:25](https://github.c
 
 > `readonly` `optional` **log?**: (`m`) => `void`
 
-Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:27](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L27)
+Defined in: [src/platform/agents/snapshot.ts:27](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L27)
 
 #### Parameters
 
@@ -52,4 +52,4 @@ Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:27](https://github.c
 
 > `readonly` **tmux**: [`TmuxClient`](TmuxClient.md)
 
-Defined in: [peel-l0-agents/src/platform/agents/snapshot.ts:24](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L24)
+Defined in: [src/platform/agents/snapshot.ts:24](https://github.com/juli-os/agents/blob/main/src/platform/agents/snapshot.ts#L24)

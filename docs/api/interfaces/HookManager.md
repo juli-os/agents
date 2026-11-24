@@ -6,7 +6,7 @@
 
 # Interface: HookManager
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:38](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L38)
+Defined in: [src/platform/agents/orchestrator.ts:38](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L38)
 
 ## Methods
 
@@ -14,7 +14,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:38](https://gith
 
 > **fire**(`p`): `Promise`\<[`HookPayload`](HookPayload.md)\>
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:40](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L40)
+Defined in: [src/platform/agents/orchestrator.ts:40](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L40)
 
 #### Parameters
 
@@ -32,7 +32,7 @@ Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:40](https://gith
 
 > **on**(`type`, `handler`): `void`
 
-Defined in: [peel-l0-agents/src/platform/agents/orchestrator.ts:39](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L39)
+Defined in: [src/platform/agents/orchestrator.ts:39](https://github.com/juli-os/agents/blob/main/src/platform/agents/orchestrator.ts#L39)
 
 #### Parameters
 

@@ -8,7 +8,7 @@
 
 > `const` **ptyAvailable**: () => `boolean`
 
-Defined in: baton/dist/baton/pty.d.ts:20
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:20
 
 ## Returns
 

@@ -8,4 +8,4 @@
 
 > `const` **TMUX\_BIN**: `string`
 
-Defined in: baton/dist/baton/tmux.d.ts:3
+Defined in: node\_modules/@juli-os/baton/dist/baton/tmux.d.ts:3

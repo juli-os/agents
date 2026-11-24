@@ -8,7 +8,7 @@
 
 > `const` **tmuxAttachCommand**: (`socketPath`, `session`, `bin?`) => readonly `string`[]
 
-Defined in: baton/dist/baton/pty.d.ts:15
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:15
 
 ## Parameters
 

@@ -8,7 +8,7 @@
 
 > `const` **attachTmuxPty**: (`tmux`, `session`, `opts?`, `onData?`) => `Promise`\<`Result`\<[`PtySession`](../interfaces/PtySession.md), `Error`\>\>
 
-Defined in: baton/dist/baton/pty.d.ts:16
+Defined in: node\_modules/@juli-os/baton/dist/baton/pty.d.ts:16
 
 ## Parameters
 

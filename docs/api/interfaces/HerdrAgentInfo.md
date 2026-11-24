@@ -6,7 +6,7 @@
 
 # Interface: HerdrAgentInfo
 
-Defined in: baton/dist/baton/herdr.d.ts:45
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:45
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: baton/dist/baton/herdr.d.ts:45
 
 > `readonly` `optional` **agent?**: `string`
 
-Defined in: baton/dist/baton/herdr.d.ts:47
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:47
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: baton/dist/baton/herdr.d.ts:47
 
 > `readonly` `optional` **agent\_status?**: `string`
 
-Defined in: baton/dist/baton/herdr.d.ts:48
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:48
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: baton/dist/baton/herdr.d.ts:48
 
 > `readonly` `optional` **interactive\_ready?**: `boolean`
 
-Defined in: baton/dist/baton/herdr.d.ts:50
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:50
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: baton/dist/baton/herdr.d.ts:50
 
 > `readonly` `optional` **name?**: `string`
 
-Defined in: baton/dist/baton/herdr.d.ts:46
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:46
 
 ***
 
@@ -46,7 +46,7 @@ Defined in: baton/dist/baton/herdr.d.ts:46
 
 > `readonly` `optional` **pane\_id?**: `string`
 
-Defined in: baton/dist/baton/herdr.d.ts:49
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:49
 
 ***
 
@@ -54,7 +54,7 @@ Defined in: baton/dist/baton/herdr.d.ts:49
 
 > `readonly` `optional` **terminal\_title?**: `string`
 
-Defined in: baton/dist/baton/herdr.d.ts:51
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:51
 
 ***
 
@@ -62,4 +62,4 @@ Defined in: baton/dist/baton/herdr.d.ts:51
 
 > `readonly` `optional` **workspace\_id?**: `string`
 
-Defined in: baton/dist/baton/herdr.d.ts:52
+Defined in: node\_modules/@juli-os/baton/dist/baton/herdr.d.ts:52
