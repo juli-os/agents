@@ -18,7 +18,6 @@ and nothing it doesn't — zero npm dependencies, Node built-ins only.
 - **Claude Code hooks** — spec-driven install of Stop/SessionStart/PermissionRequest/
   UserPromptSubmit/Notification/PostToolUse hooks so agent events flow back to your service
 - **Skills** — markdown skill registry with prompt expansion
-- **ACP executor** — protocol-level completion, preferred over tmux async when present
 - **Orchestrator & voice-call scaffolding** — hook manager, command registry,
   session assessor, and the staged-plan (discuss → proposed → confirmed) call flow
 
@@ -55,7 +54,7 @@ npx juli-agents has worker-1 -S /tmp/my.sock && echo alive
 
 | consumes | provides |
 |---|---|
-| nothing (zero deps) | tmux/PTY sessions, confirmed delivery, dispatch, hooks, snapshots, skills, ACP |
+| nothing (zero deps) | tmux/PTY sessions, confirmed delivery, dispatch, hooks, snapshots, skills |
 
 Up the ladder: [`@juli-os/ledger`](https://github.com/juli-os/ledger) records what
 agents do, [`@juli-os/routing`](https://github.com/juli-os/routing) decides where

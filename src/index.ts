@@ -62,9 +62,6 @@ export {
   type Skill, type SkillRegistry,
 } from './platform/agents/skills.ts';
 export {
-  createAcpExecutor, type AcpDeps, type AcpExecutor,
-} from './platform/agents/acp.ts';
-export {
   decideContextAction, DEFAULT_COMPACT_THRESHOLD, DEFAULT_COMPACT_COOLDOWN_MS,
   type ContextAction, type ContextGateState,
 } from './platform/agents/contextGate.ts';
@@ -88,7 +85,7 @@ export {
   type CallPhase, type VoiceEvent, type VoiceCallDeps, type VoiceTurn, type VoiceCall,
 } from './platform/agents/voice.ts';
 export type {
-  SyncDispatcherPort, ToolSchema, ToolCallRequest,
+  ToolSchema, ToolCallRequest,
   ChatMessage, ChatResult, ChatLlmPort,
 } from './contracts/ports.ts';
 // 0.1.3: complete the pane-question surface — parsePaneQuestion (+ PaneQuestion

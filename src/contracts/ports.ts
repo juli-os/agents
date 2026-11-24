@@ -1,13 +1,8 @@
 // L0 的对外端口契约（type-only，零运行时代码）：引擎注入实现，包内只认形状。
-// 来源三处的主仓定义逐字拷贝（contracts/ports.ts 的 SyncDispatcherPort、
-// platform/llm/chat.ts 的聊天端口族）——L0 不依赖 L5 的 llm 实现，只依赖形状。
+// 来源：主仓 platform/llm/chat.ts 的聊天端口族，定义逐字拷贝——L0 不依赖 L5 的
+// llm 实现，只依赖形状。
 
 import type { Result } from '../platform/shared/result.ts';
-
-/** ACP 在途 turn 的同步派发口（interrupt 优先走 ACP 在途通道）。 */
-export interface SyncDispatcherPort {
-  dispatchSync(source: string, session: string, text: string): Promise<Result<string, Error>>;
-}
 
 /** LLM 工具的 JSON Schema（parameters）。 */
 export interface ToolSchema {
